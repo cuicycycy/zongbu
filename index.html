@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>区域升级工单跟踪看板</title>
+<style>
+  :root{
+    --bg:#eef1f5; --card:#ffffff; --ink:#1f2d3d; --sub:#6b7785; --line:#e3e8ef;
+    --brand:#2f6fed; --brand-soft:#eaf1ff; --anom:#e23b3b; --anom-soft:#fdeaea;
+    --ok:#1f9d55; --ok-soft:#e8f6ee; --warn:#e8920a; --hi:#fff7e6;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg); color:var(--ink); font-size:13px; line-height:1.5;}
+  .hdr{position:sticky; top:0; z-index:50; background:var(--card); border-bottom:1px solid var(--line);
+    box-shadow:0 1px 4px rgba(0,0,0,.04);}
+  .hdr-inner{max-width:1500px; margin:0 auto; padding:12px 18px 0;}
+  .hdr h1{margin:0; text-align:center; font-size:19px; font-weight:700; letter-spacing:1px;}
+  .hdr h1 .dot{color:var(--brand);}
+  .toprow{max-width:1500px; margin:0 auto; padding:8px 18px 10px; display:flex; align-items:center;
+    gap:14px; flex-wrap:wrap; justify-content:space-between;}
+  .tabs{display:inline-flex; background:var(--bg); border:1px solid var(--line); border-radius:9px; padding:3px;}
+  .tab{border:0; background:transparent; color:var(--sub); padding:6px 18px; font-size:13px; font-weight:600;
+    border-radius:7px; cursor:pointer; transition:.15s;}
+  .tab.active{background:var(--brand); color:#fff; box-shadow:0 1px 3px rgba(47,111,237,.35);}
+  .fbar{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .fbar label{display:inline-flex; align-items:center; gap:5px; color:var(--sub); font-size:12px;}
+  .fbar select{border:1px solid var(--line); border-radius:7px; padding:5px 8px; background:#fff;
+    color:var(--ink); font-size:12px; min-width:100px; outline:none;}
+  .fbar select:focus{border-color:var(--brand);}
+  .fbar .reset{border:1px solid var(--line); background:#fff; color:var(--sub); border-radius:7px;
+    padding:5px 12px; cursor:pointer; font-size:12px;}
+  .fbar .reset:hover{border-color:var(--anom); color:var(--anom);}
+  .body{max-width:1500px; margin:0 auto; padding:14px 18px 40px;}
+  .overview{display:flex; gap:12px; flex-wrap:wrap; margin-bottom:14px;}
+  .kpi{background:var(--card); border:1px solid var(--line); border-radius:11px; padding:11px 16px;
+    min-width:140px; flex:1; text-align:center;}
+  .kpi .lab{color:var(--sub); font-size:12px;}
+  .kpi .num{font-size:23px; font-weight:700; margin-top:3px;}
+  .kpi.anom{border-color:#f6c9c9;} .kpi.anom .num{color:var(--anom);}
+  .kpi.ok{border-color:#bfe6cd;} .kpi.ok .num{color:var(--ok);}
+  .kpi.plain .num{color:var(--brand);}
+  .sumwrap{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; align-items:stretch;}
+  .panel{background:var(--card); border:1px solid var(--line); border-radius:11px; min-width:0;
+    display:flex; flex-direction:column; max-height:330px; overflow:hidden;}
+  .panel h3{margin:0; padding:9px 13px; font-size:13px; font-weight:700; border-bottom:1px solid var(--line);
+    display:flex; justify-content:space-between; align-items:center;}
+  .panel h3 .cnt{font-weight:500; color:var(--sub); font-size:11px;}
+  .ptable{overflow:auto;}
+  table{border-collapse:collapse; width:100%; font-size:12px;}
+  .ptable table th, .ptable table td{padding:7px 8px; text-align:center; white-space:nowrap;}
+  .ptable thead th{position:sticky; top:0; background:#f7f9fc; color:var(--sub); font-weight:600;
+    border-bottom:1px solid var(--line); z-index:2;}
+  .drow{cursor:pointer; transition:.1s;}
+  .drow:hover{background:var(--brand-soft);}
+  .drow.hl{background:var(--hi);}
+  .drow.hl td:first-child{font-weight:700; color:var(--warn);}
+  td.anom{color:var(--anom); font-weight:700;}
+  td.ok{color:var(--ok);}
+  .detail{background:var(--card); border:1px solid var(--line); border-radius:11px; margin-top:14px; overflow:hidden;}
+  .dbar{display:flex; align-items:center; gap:12px; padding:10px 13px; border-bottom:1px solid var(--line);
+    flex-wrap:wrap;}
+  .dbar .dtitle{font-weight:700; font-size:13px;}
+  .dbar input[type=text]{border:1px solid var(--line); border-radius:7px; padding:6px 10px; font-size:12px;
+    outline:none; min-width:230px;}
+  .dbar input[type=text]:focus{border-color:var(--brand);}
+  .dbar label{display:inline-flex; align-items:center; gap:5px; color:var(--sub); font-size:12px; cursor:pointer;}
+  .dcount{margin-left:auto; color:var(--sub); font-size:12px;}
+  .dcount b{color:var(--anom);}
+  .dtable-wrap{overflow:auto; max-height:560px;}
+  .dtable-wrap table{border-collapse:collapse; width:100%; font-size:12px;}
+  .dtable-wrap th, .dtable-wrap td{padding:7px 8px; border-bottom:1px solid #f0f3f7; text-align:center; white-space:nowrap;}
+  .dtable-wrap thead th{position:sticky; top:0; background:#f7f9fc; color:var(--sub); font-weight:600;
+    cursor:pointer; user-select:none; z-index:2;}
+  .dtable-wrap thead th:hover{color:var(--brand);}
+  .dtable-wrap thead th .ar{font-size:10px; color:var(--brand);}
+  .dtable-wrap tbody tr:hover{background:#f7faff;}
+  .wrap{max-width:240px; white-space:normal; word-break:break-all; text-align:left;}
+  .badge{display:inline-block; padding:1px 8px; border-radius:9px; font-weight:600;}
+  .badge.anom{background:var(--anom-soft); color:var(--anom);}
+  .badge.ok{background:var(--ok-soft); color:var(--ok);}
+  /* 客诉类型汇总：左=发生/闭环条形图，右=近一周趋势 */
+  .chartpanel{background:var(--card); border:1px solid var(--line); border-radius:11px; margin-top:14px; padding:12px 16px; overflow:hidden;}
+  .cphdr{font-weight:700; font-size:13px; margin-bottom:10px; display:flex; gap:10px; align-items:baseline;}
+  .cpsub{font-weight:500; color:var(--sub); font-size:11px;}
+  .charts{display:flex; gap:24px; flex-wrap:wrap;}
+  .chart-left{flex:1 1 340px; min-width:280px; display:flex; flex-direction:column;}
+  .chart-right{flex:1 1 300px; min-width:240px; display:flex; flex-direction:column;}
+  .blk-tit{font-weight:700; font-size:12px; color:var(--sub); margin-top:2px; display:flex; align-items:center; gap:8px;}
+  .trend{height:200px; width:100%; position:relative;}
+  .trend-delta{font-weight:600; font-size:11px;}
+  .trend-delta.up{color:var(--anom);}
+  .trend-delta.down{color:var(--ok);}
+  .trend-delta.flat{color:var(--sub);}
+  .tdot{position:absolute; width:11px; height:11px; background:var(--brand); border:2px solid #fff; border-radius:50%;
+    transform:translate(-50%,-50%); cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,.25); z-index:3; transition:background .12s;}
+  .tdot:hover{background:var(--anom);}
+  .ttip{position:absolute; transform:translate(-50%,calc(-100% - 12px)); background:#1f2d3d; color:#fff; border-radius:8px;
+    padding:6px 9px; font-size:11px; white-space:nowrap; pointer-events:none; opacity:0; transition:opacity .12s; z-index:6;
+    box-shadow:0 3px 10px rgba(0,0,0,.3);}
+  .ttip.below{transform:translate(-50%,14px);}
+  .ttip.show{opacity:1;}
+  .ttip .tt-day{font-weight:700; margin-bottom:3px;}
+  .ttip .tt-types{display:flex; gap:7px; flex-wrap:wrap; justify-content:center;}
+  .ttip .tt-types span{background:rgba(255,255,255,.16); border-radius:5px; padding:1px 7px;}
+  .legend{font-size:11px; color:var(--sub); display:flex; gap:16px; align-items:center; margin:2px 0 4px;}
+  .lg{display:inline-block; width:11px; height:11px; border-radius:3px; margin-right:4px; vertical-align:middle;}
+  .lg.occ{background:var(--brand);} .lg.closed{background:var(--ok);}
+  .gbars{display:flex; align-items:flex-end; gap:14px; height:200px; padding-top:4px; min-width:0; overflow:hidden;}
+  .gbar{flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:center; height:100%;}
+  .gstack{display:flex; align-items:flex-end; justify-content:center; gap:6px; height:160px; width:100%;}
+  .gcol{display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%;}
+  .gnum{font-size:11px; font-weight:600; color:var(--ink); margin-bottom:2px;}
+  .gfill{width:20px; border-radius:4px 4px 0 0; min-height:2px;}
+  .gfill.occ{background:var(--brand);}
+  .gfill.closed{background:var(--ok);}
+  .glab{font-size:11px; color:var(--ink); margin-top:6px; max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center;}
+  /* 最新催单信息：可展开 */
+  .expandable{display:inline-block; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    cursor:pointer; color:var(--ink); vertical-align:middle; position:relative; padding-right:2px;}
+  .expandable:hover{color:var(--brand);}
+  .expandable.expanded{max-width:none; white-space:normal; overflow:visible; text-align:left;}
+  .expandable::after{content:"▾"; font-size:9px; color:var(--sub); margin-left:3px;}
+  .expandable.expanded::after{content:"▴";}
+  @media(max-width:1000px){
+    .sumwrap{grid-template-columns:1fr;}
+    .toprow{justify-content:flex-start;}
+  }
+
+  /* 访问码门禁 */
+  #gate{position:fixed; inset:0; z-index:9999; background:rgba(238,241,245,.97);
+    display:flex; align-items:center; justify-content:center;}
+  #gate .box{background:#fff; border:1px solid var(--line); border-radius:14px; padding:28px 30px;
+    width:320px; max-width:90vw; box-shadow:0 8px 30px rgba(0,0,0,.12); text-align:center;}
+  #gate .gt{font-size:17px; font-weight:700; color:var(--ink);}
+  #gate .gs{font-size:12px; color:var(--sub); margin:6px 0 16px;}
+  #gate input{width:100%; box-sizing:border-box; padding:10px 12px; border:1px solid var(--line);
+    border-radius:8px; font-size:14px; outline:none; text-align:center;}
+  #gate input:focus{border-color:var(--brand);}
+  #gate .gb{margin-top:14px; width:100%; padding:10px; border:0; border-radius:8px; background:var(--brand);
+    color:#fff; font-size:14px; font-weight:600; cursor:pointer;}
+  #gate .ge{color:var(--anom); font-size:12px; margin-top:10px; min-height:16px;}
+  #app{visibility:hidden;}
+</style>
+</head>
+<body>
+<div id="gate">
+  <div class="box">
+    <div class="gt">区域升级工单跟踪看板</div>
+    <div class="gs">请输入访问码后查看</div>
+    <input id="gateInput" type="password" placeholder="访问码" autocomplete="off" />
+    <button id="gateBtn" class="gb">进入看板</button>
+    <div id="gateErr" class="ge"></div>
+  </div>
+</div>
+<script>
+/* 访问码门禁 */
+(function(){
+  const CODE='wb8848';
+  const gate=document.getElementById('gate');
+  const inp=document.getElementById('gateInput');
+  const btn=document.getElementById('gateBtn');
+  const err=document.getElementById('gateErr');
+  function ok(){
+    if(inp.value.trim()===CODE){
+      gate.style.display='none';
+      document.getElementById('app').style.visibility='visible';
+    } else { err.textContent='访问码错误，请重试'; }
+  }
+  btn.addEventListener('click',ok);
+  inp.addEventListener('keydown',e=>{ if(e.key==='Enter') ok(); });
+})();
+</script>
+<div id="app">
+
+<div class="hdr">
+  <div class="hdr-inner">
+    <h1><span class="dot">●</span> 区域升级工单跟踪看板</h1>
+  </div>
+  <div class="toprow">
+    <div class="tabs">
+      <button class="tab active" data-tab="leiqu">客诉雷区</button>
+      <button class="tab" data-tab="duocui">多催跟踪</button>
+    </div>
+    <div class="fbar">
+      <label>月份<select id="fMonth"></select></label>
+      <label>大区<select id="fBig"></select></label>
+      <label>区域经理<select id="fMgr"></select></label>
+      <label>总部信息员<select id="fHq"></select></label>
+      <button class="reset" id="resetF">重置筛选</button>
+    </div>
+  </div>
+</div>
+
+<div class="body">
+  <div class="overview" id="overview"></div>
+
+  <div class="sumwrap">
+    <div class="panel" id="pHq"><h3>总部信息员维度</h3><div class="ptable"></div></div>
+    <div class="panel" id="pBig"><h3>大区经理维度</h3><div class="ptable"></div></div>
+    <div class="panel" id="pMgr"><h3>区域经理维度</h3><div class="ptable"></div></div>
+  </div>
+
+  <div class="chartpanel" id="typeChartPanel">
+    <div class="cphdr">客诉类型汇总 <span id="cpSub" class="cpsub"></span></div>
+    <div class="charts">
+      <div class="chart-left">
+        <div class="blk-tit">各类型 发生 / 闭环 对比</div>
+        <div class="legend"><span><span class="lg occ"></span>发生</span><span><span class="lg closed"></span>闭环</span></div>
+        <div class="gbars" id="typeBars"></div>
+      </div>
+      <div class="chart-right">
+        <div class="blk-tit">近一周客诉量趋势 <span id="trendDelta"></span></div>
+        <div class="trend" id="trendChart"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="detail">
+    <div class="dbar">
+      <span class="dtitle">明细列表</span>
+      <input type="text" id="dKw" placeholder="搜索网点 / 单号 / 投诉类型 / 人员...">
+      <label><input type="checkbox" id="onlyAnom" checked> 仅看异常</label>
+      <span class="dcount" id="dCount"></span>
+    </div>
+    <div class="dtable-wrap"><table id="dTable"></table></div>
+  </div>
+</div>
+
+<script>
+let DATA;
+(async function(){
+  try {
+    DATA = await (await fetch('data.json?_=' + Date.now())).json();
+  } catch (e) {
+    var app = document.getElementById('app');
+    if (app) app.innerHTML = '<div style="padding:24px;color:#c0392b">数据加载失败，请刷新重试</div>';
+    console.error(e); return;
+  }
+
+
+const state = {tab:'leiqu', fMonth:'', fBig:'', fMgr:'', fHq:'', kw:'', onlyAnom:true, sortKey:null, sortDir:1};
+
+const COLS = {
+  leiqu: [
+    {k:'big', t:'大区经理', w:110},
+    {k:'mgr', t:'区域经理', w:110},
+    {k:'hq', t:'总部信息员', w:110},
+    {k:'shop', t:'网点', w:170, wrap:true},
+    {k:'date', t:'发生日期', w:95},
+    {k:'oid', t:'来源单号', w:120},
+    {k:'ctype', t:'投诉类型', w:150, wrap:true},
+    {k:'step1', t:'是否还原', w:80},
+    {k:'step2', t:'是否合格', w:80},
+    {k:'area', t:'区域', w:80},
+    {k:'hq_status', t:'总部', w:80},
+    {k:'final', t:'结果', w:100},
+    {k:'acts', t:'总部跟进举措', w:200, wrap:true},
+    {k:'reason', t:'客诉产生原因概况', w:230, wrap:true}
+  ],
+  duocui: [
+    {k:'big', t:'大区经理', w:100},
+    {k:'mgr', t:'区域经理', w:100},
+    {k:'hq', t:'总部信息员', w:100},
+    {k:'shop', t:'网点', w:185, wrap:true},
+    {k:'date', t:'发生日期', w:95},
+    {k:'oid', t:'来源单号', w:110},
+    {k:'latest', t:'最新催单信息', w:150, expand:true},
+    {k:'cnt', t:'应催次数', w:80},
+    {k:'area', t:'区域', w:80},
+    {k:'big_st', t:'大区', w:80},
+    {k:'hq_status', t:'总部', w:80},
+    {k:'hqreply', t:'总部回复', w:160, wrap:true},
+    {k:'need', t:'需总部支持', w:200, wrap:true}
+  ]
+};
+
+const STATUS_KEYS = {area:1, big_st:1, hq_status:1, step1:1, step2:1, final:1};
+
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function stripType(s){ s=s||''; const i=s.lastIndexOf('/'); return i>=0 ? s.slice(i+1) : s; }
+function statusCls(v){
+  if(!v) return '';
+  if(/异常|未还原|不合格|未闭环|未联系|否/.test(v)) return 'anom';
+  if(/正常|已还原|合格|闭环|已联系/.test(v)) return 'ok';
+  return '';
+}
+function sev(r){ return (r.area==='异常'?1:0)+(r.big_st==='异常'?1:0)+(r.hq_status==='异常'?1:0); }
+function dimData(){ return DATA[state.tab]; }
+function base(){ return dimData().filter(r=> !state.fMonth || (r.date||'').slice(0,7)===state.fMonth); }
+function scope(rows, opt){
+  return rows.filter(r=>
+    (!opt.hq   || !state.fHq   || r.hq===state.fHq) &&
+    (!opt.big  || !state.fBig  || r.big===state.fBig) &&
+    (!opt.mgr  || !state.fMgr  || r.mgr===state.fMgr)
+  );
+}
+
+function allowed(){
+  const rows = base();
+  const mgrSet = new Set(rows.filter(r=>(!state.fHq||r.hq===state.fHq)&&(!state.fBig||r.big===state.fBig)).map(r=>r.mgr));
+  const bigSet = new Set(rows.filter(r=>(!state.fHq||r.hq===state.fHq)&&(!state.fMgr||r.mgr===state.fMgr)).map(r=>r.big));
+  const hqSet  = new Set(rows.filter(r=>(!state.fBig||r.big===state.fBig)&&(!state.fMgr||r.mgr===state.fMgr)).map(r=>r.hq));
+  return {mgrs:[...mgrSet].sort(), bigs:[...bigSet].sort(), hqs:[...hqSet].sort()};
+}
+
+function fillSelect(id, vals, cur, allLabel){
+  const el = document.getElementById(id);
+  let html = '<option value="">'+allLabel+'</option>';
+  vals.forEach(v=>{ if(v) html += '<option value="'+esc(v)+'"'+(v===cur?' selected':'')+'>'+esc(v)+'</option>'; });
+  el.innerHTML = html;
+}
+
+function renderFilters(){
+  const a = allowed();
+  if(!a.bigs.includes(state.fBig)) state.fBig='';
+  if(!a.mgrs.includes(state.fMgr)) state.fMgr='';
+  if(!a.hqs.includes(state.fHq)) state.fHq='';
+  fillSelect('fBig', a.bigs, state.fBig, '全部');
+  fillSelect('fMgr', a.mgrs, state.fMgr, '全部');
+  fillSelect('fHq', a.hqs, state.fHq, '全部');
+  const months = [...new Set(dimData().map(r=>(r.date||'').slice(0,7)).filter(Boolean))].sort();
+  fillSelect('fMonth', months, state.fMonth, '全部月份');
+}
+
+function groupBy(rows, key){
+  const m = {};
+  rows.forEach(r=>{
+    const k = r[key]||'—';
+    if(!m[k]) m[k] = {name:k, total:0, a:0, b:0, h:0};
+    m[k].total++;
+    if(r.area==='异常') m[k].a++;
+    if(r.big_st==='异常') m[k].b++;
+    if(r.hq_status==='异常') m[k].h++;
+  });
+  return m;
+}
+
+function renderDim(panelId, groupKey, opt, hlKey, label){
+  const rows = scope(base(), opt);
+  const g = groupBy(rows, groupKey);
+  const arr = Object.values(g).sort((x,y)=> (y.a+y.b+y.h)-(x.a+x.b+x.h) || y.total-x.total);
+  let html = '<div class="ptable"><table><thead><tr><th>'+label+'</th><th>总数</th><th>区域异常</th><th>大区异常</th><th>总部异常</th></tr></thead><tbody>';
+  if(arr.length===0){ html += '<tr><td colspan="5" style="color:var(--sub);text-align:center;padding:18px">无数据</td></tr>'; }
+  arr.forEach(x=>{
+    const hl = (state[hlKey]===x.name) ? ' hl' : '';
+    html += '<tr class="drow'+hl+'" data-key="'+groupKey+'" data-val="'+esc(x.name)+'">'+
+      '<td>'+esc(x.name)+'</td><td>'+x.total+'</td>'+
+      '<td class="'+(x.a?'anom':'')+'">'+x.a+'</td>'+
+      '<td class="'+(x.b?'anom':'')+'">'+x.b+'</td>'+
+      '<td class="'+(x.h?'anom':'')+'">'+x.h+'</td></tr>';
+  });
+  html += '</tbody></table></div>';
+  const p = document.getElementById(panelId);
+  p.innerHTML = '<h3>'+label+'维度 <span class="cnt">共 '+arr.length+' 人</span></h3>' + html;
+}
+
+function renderDims(){
+  renderDim('pHq',  'hq',  {big:true, mgr:true}, 'fHq',  '总部信息员');
+  renderDim('pBig', 'big', {hq:true, mgr:true}, 'fBig', '大区经理');
+  renderDim('pMgr', 'mgr', {hq:true, big:true}, 'fMgr', '区域经理');
+}
+
+function renderOverview(){
+  const rows = scope(base(), {hq:true, big:true, mgr:true});
+  const total = rows.length;
+  let cards=[];
+  if(state.tab==='leiqu'){
+    const closed = rows.filter(r=>r.final==='正常闭环').length;
+    const aOpen  = rows.filter(r=>r.final==='异常未闭环').length;
+    const aA = rows.filter(r=>r.area==='异常').length;
+    const aH = rows.filter(r=>r.hq_status==='异常').length;
+    cards = [
+      {lab:'累计发生', num:total, cls:'plain'},
+      {lab:'已闭环', num:closed, cls:'ok'},
+      {lab:'异常未闭环', num:aOpen, cls:'anom'},
+      {lab:'区域进度异常', num:aA, cls:'anom'},
+      {lab:'总部进度异常', num:aH, cls:'anom'}
+    ];
+  } else {
+    const closed = rows.filter(r=> r.closed===true).length;
+    const open   = total - closed;
+    const aA = rows.filter(r=>r.area==='异常').length;
+    const aB = rows.filter(r=>r.big_st==='异常').length;
+    const aH = rows.filter(r=>r.hq_status==='异常').length;
+    cards = [
+      {lab:'累计发生', num:total, cls:'plain'},
+      {lab:'已闭环', num:closed, cls:'ok'},
+      {lab:'未闭环', num:open, cls:'anom'},
+      {lab:'区域未按标准', num:aA, cls:'anom'},
+      {lab:'大区未按标准', num:aB, cls:'anom'},
+      {lab:'总部未按标准', num:aH, cls:'anom'}
+    ];
+  }
+  let html='';
+  cards.forEach(c=> html += '<div class="kpi '+c.cls+'"><div class="lab">'+c.lab+'</div><div class="num">'+c.num+'</div></div>');
+  document.getElementById('overview').innerHTML = html;
+}
+
+function renderTypeChart(){
+  const panel = document.getElementById('typeChartPanel');
+  if(state.tab!=='leiqu'){ panel.style.display='none'; return; }
+  panel.style.display='';
+  const rows = scope(base(), {hq:true, big:true, mgr:true});
+  const tm = {}; const dm = {}; const ddm = {};
+  rows.forEach(r=>{
+    const t = stripType(r.ctype)||'—';
+    if(!tm[t]) tm[t] = {name:t, total:0, closed:0};
+    tm[t].total++;
+    if(r.final==='正常闭环') tm[t].closed++;
+    const day = (r.date||'').slice(0,10);
+    if(day){
+      dm[day] = (dm[day]||0)+1;
+      if(!ddm[day]) ddm[day] = {};
+      ddm[day][t] = (ddm[day][t]||0)+1;
+    }
+  });
+  const types = Object.values(tm).sort((a,b)=> b.total-a.total || b.closed-a.closed);
+  // 左：各类型 发生 / 闭环 对比条形图
+  const maxT = Math.max(1, ...types.map(x=>x.total));
+  const plotH = 144;
+  let bars='';
+  types.forEach(x=>{
+    const hO = Math.max(2, Math.round(x.total/maxT*plotH));
+    const hC = Math.max(2, Math.round(x.closed/maxT*plotH));
+    bars += '<div class="gbar"><div class="gstack">'+
+      '<div class="gcol"><div class="gnum">'+x.total+'</div><div class="gfill occ" style="height:'+hO+'px"></div></div>'+
+      '<div class="gcol"><div class="gnum">'+x.closed+'</div><div class="gfill closed" style="height:'+hC+'px"></div></div>'+
+      '</div><div class="glab" title="'+esc(x.name)+'">'+esc(x.name)+'</div></div>';
+  });
+  document.getElementById('typeBars').innerHTML = bars;
+  // 右：近一周客诉量趋势（最近 7 个自然日，无数据的当天补 0）
+  const days = Object.keys(dm).sort();
+  let recentDays = [];
+  if(days.length){
+    const p = days[days.length-1].split('-').map(Number);
+    const end = new Date(p[0], p[1]-1, p[2]);
+    for(let k=6;k>=0;k--){
+      const d2 = new Date(end); d2.setDate(end.getDate()-k);
+      const ds = d2.getFullYear()+'-'+String(d2.getMonth()+1).padStart(2,'0')+'-'+String(d2.getDate()).padStart(2,'0');
+      recentDays.push(ds);
+    }
+  }
+  if(recentDays.length){
+    const vals = recentDays.map(d=>dm[d]||0);
+    const last = vals[vals.length-1], prev = vals.length>1?vals[vals.length-2]:0;
+    const diff = last-prev;
+    const cls = diff>0?'up':(diff<0?'down':'flat');
+    const arrow = diff>0?'▲':(diff<0?'▼':'■');
+    document.getElementById('trendDelta').innerHTML =
+      '<span class="trend-delta '+cls+'">最近日 '+last+' '+arrow+(diff>0?'+':'')+diff+'</span>';
+    const W=100,H=44,pad=4, maxV=Math.max(1,...vals);
+    const step = vals.length>1 ? (W-2*pad)/(vals.length-1) : 0;
+    let pts='';
+    vals.forEach((v,i)=>{
+      const x=pad+step*i, y=H-pad-(v/maxV)*(H-2*pad);
+      pts += (i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1)+' ';
+    });
+    const area = 'M'+pad+' '+(H-pad)+' '+pts.replace(/^M/,'L')+'L'+(W-pad)+' '+(H-pad)+' Z';
+    // 圆点：用 HTML 固定尺寸 span（border-radius:50%），避免 SVG 拉伸导致不圆；并绑定悬浮提示
+    let dots='';
+    recentDays.forEach((d,i)=>{
+      const v = dm[d]||0;
+      const x=pad+step*i, y=H-pad-(v/maxV)*(H-2*pad);
+      const L=(x/W*100).toFixed(2), T=(y/H*100).toFixed(2);
+      const typesStr = Object.entries(ddm[d]||{}).map(([k,val])=>esc(k)+' '+val).join('、');
+      dots += '<span class="tdot" style="left:'+L+'%;top:'+T+'%" data-day="'+d+'" data-total="'+v+'" data-types="'+esc(typesStr)+'"></span>';
+    });
+    document.getElementById('trendChart').innerHTML =
+      '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:100%;display:block">'+
+      '<path d="'+area+'" fill="rgba(47,111,237,.12)"/>'+
+      '<path d="'+pts+'" fill="none" stroke="var(--brand)" stroke-width="1.5"/></svg>'+
+      dots + '<div class="ttip" id="ttip"></div>';
+    bindTrendDots();
+  } else {
+    document.getElementById('trendDelta').innerHTML='';
+    document.getElementById('trendChart').innerHTML='<div style="color:var(--sub);font-size:11px">无数据</div>';
+  }
+  document.getElementById('cpSub').textContent = '共 '+types.length+' 类 / '+rows.length+' 单';
+}
+
+function bindTrendDots(){
+  const tc = document.getElementById('trendChart');
+  const tip = document.getElementById('ttip');
+  if(!tc || !tip) return;
+  tc.querySelectorAll('.tdot').forEach(d=>{
+    d.addEventListener('mouseenter', ()=>{
+      const day=d.dataset.day, total=d.dataset.total, types=d.dataset.types;
+      const items = (types||'').split('、').filter(Boolean).map(s=>'<span>'+s+'</span>').join('');
+      tip.innerHTML = '<div class="tt-day">'+day+'　共 '+total+' 单</div><div class="tt-types">'+items+'</div>';
+      tip.style.left = d.style.left; tip.style.top = d.style.top;
+      tip.classList.toggle('below', parseFloat(d.style.top) < 28);
+      tip.classList.add('show');
+    });
+    d.addEventListener('mouseleave', ()=> tip.classList.remove('show'));
+  });
+}
+
+function cellHTML(r, c){
+  const v = r[c.k];
+  if(c.k==='ctype'){ return esc(stripType(v)); }
+  if(c.expand){
+    return '<span class="expandable" title="点击展开/收起">'+esc(v)+'</span>';
+  }
+  if(STATUS_KEYS[c.k]){
+    const cls = statusCls(v);
+    if(cls) return '<span class="badge '+cls+'">'+esc(v)+'</span>';
+    return esc(v);
+  }
+  if(c.wrap) return '<div class="wrap">'+esc(v)+'</div>';
+  return esc(v);
+}
+
+function renderDetail(){
+  let rows = scope(base(), {hq:true, big:true, mgr:true});
+  if(state.onlyAnom) rows = rows.filter(r=> r.area==='异常'||r.big_st==='异常'||r.hq_status==='异常');
+  if(state.kw){
+    const k = state.kw.toLowerCase();
+    rows = rows.filter(r=> [r.shop,r.oid,stripType(r.ctype),r.big,r.mgr,r.hq,r.latest,r.hqreply,r.need,r.reason,r.final]
+      .some(x=> (x||'').toLowerCase().includes(k)));
+  }
+  if(state.sortKey===null){
+    rows = rows.slice().sort((a,b)=> sev(b)-sev(a));
+  } else {
+    const k = state.sortKey;
+    rows = rows.slice().sort((a,b)=>{
+      const va=a[k], vb=b[k];
+      let c;
+      if(k==='cnt'){ c=(Number(va)||0)-(Number(vb)||0); }
+      else { c = String(va==null?'':va).localeCompare(String(vb==null?'':vb),'zh'); }
+      return c*state.sortDir;
+    });
+  }
+  const cols = COLS[state.tab];
+  let colg = '<colgroup>';
+  cols.forEach(c=> colg += '<col'+(c.w?(' style="width:'+c.w+'px"'):'')+'/>');
+  colg += '</colgroup>';
+  let html = colg + '<thead><tr>';
+  cols.forEach(c=>{
+    let ar = '';
+    if(state.sortKey===c.k) ar = ' <span class="ar">'+(state.sortDir>0?'▲':'▼')+'</span>';
+    html += '<th data-k="'+c.k+'">'+c.t+ar+'</th>';
+  });
+  html += '</tr></thead><tbody>';
+  if(rows.length===0){ html += '<tr><td colspan="'+cols.length+'" style="text-align:center;color:var(--sub);padding:20px">无匹配记录</td></tr>'; }
+  rows.forEach(r=>{
+    html += '<tr>';
+    cols.forEach(c=>{ html += '<td>'+cellHTML(r,c)+'</td>'; });
+    html += '</tr>';
+  });
+  html += '</tbody>';
+  document.getElementById('dTable').innerHTML = html;
+  const total = scope(base(), {hq:true,big:true,mgr:true}).length;
+  const anomCnt = scope(base(), {hq:true,big:true,mgr:true}).filter(r=> r.area==='异常'||r.big_st==='异常'||r.hq_status==='异常').length;
+  document.getElementById('dCount').innerHTML = '异常 <b>'+rows.length+'</b> / 总 '+total+'（全量异常 '+anomCnt+'）';
+}
+
+function renderAll(){
+  renderOverview();
+  renderFilters();
+  renderDims();
+  renderTypeChart();
+  renderDetail();
+}
+
+document.querySelectorAll('.tab').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    state.tab = b.dataset.tab;
+    state.sortKey=null; state.sortDir=1;
+    renderAll();
+  });
+});
+
+['fMonth','fBig','fMgr','fHq'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', e=>{
+    state[id] = e.target.value;
+    renderAll();
+  });
+});
+
+document.getElementById('resetF').addEventListener('click', ()=>{
+  state.fMonth=''; state.fBig=''; state.fMgr=''; state.fHq='';
+  renderAll();
+});
+
+document.querySelector('.sumwrap').addEventListener('click', e=>{
+  const tr = e.target.closest('.drow');
+  if(!tr) return;
+  const map = {hq:'fHq', big:'fBig', mgr:'fMgr'};
+  const fk = map[tr.dataset.key];
+  const val = tr.dataset.val;
+  state[fk] = (state[fk]===val) ? '' : val;
+  renderAll();
+});
+
+document.getElementById('dKw').addEventListener('input', e=>{ state.kw = e.target.value.trim(); renderDetail(); });
+document.getElementById('onlyAnom').addEventListener('change', e=>{ state.onlyAnom = e.target.checked; renderDetail(); });
+
+document.getElementById('dTable').addEventListener('click', e=>{
+  const th = e.target.closest('th');
+  if(th){
+    const k = th.dataset.k;
+    if(state.sortKey===k){ state.sortDir = -state.sortDir; }
+    else { state.sortKey = k; state.sortDir = 1; }
+    renderDetail();
+    return;
+  }
+  const exp = e.target.closest('.expandable');
+  if(exp){ exp.classList.toggle('expanded'); }
+});
+
+renderAll();
+})();
+</script>
+</div>
+</body>
+</html>
