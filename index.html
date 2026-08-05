@@ -19,6 +19,7 @@
   .hdr-inner{max-width:1500px; margin:0 auto; padding:12px 18px 0;}
   .hdr h1{margin:0; text-align:center; font-size:19px; font-weight:700; letter-spacing:1px;}
   .hdr h1 .dot{color:var(--brand);}
+  .hdr h1 .subtime{font-size:11px; font-weight:400; color:var(--sub); letter-spacing:0; margin-left:10px; vertical-align:middle;}
   .toprow{max-width:1500px; margin:0 auto; padding:8px 18px 10px; display:flex; align-items:center;
     gap:14px; flex-wrap:wrap; justify-content:space-between;}
   .tabs{display:inline-flex; background:var(--bg); border:1px solid var(--line); border-radius:9px; padding:3px;}
@@ -177,7 +178,7 @@
 
 <div class="hdr">
   <div class="hdr-inner">
-    <h1><span class="dot">●</span> 区域升级工单跟踪看板</h1>
+    <h1><span class="dot">●</span> 区域升级工单跟踪看板<span class="subtime" id="uptime"></span></h1>
   </div>
   <div class="toprow">
     <div class="tabs">
@@ -190,6 +191,7 @@
       <label>区域经理<select id="fMgr"></select></label>
       <label>总部信息员<select id="fHq"></select></label>
       <button class="reset" id="resetF">重置筛选</button>
+      <label id="hideClosedWrap" style="display:none"><input type="checkbox" id="hideClosed" checked> 隐藏已回执/已闭环</label>
     </div>
   </div>
 </div>
@@ -241,7 +243,7 @@ let DATA;
   }
 
 
-const state = {tab:'leiqu', fMonth:'', fBig:'', fMgr:'', fHq:'', kw:'', onlyAnom:true, sortKey:null, sortDir:1};
+const state = {tab:'leiqu', fMonth:'', fBig:'', fMgr:'', fHq:'', kw:'', onlyAnom:true, hideClosed:true, sortKey:null, sortDir:1};
 
 const COLS = {
   leiqu: [
@@ -289,7 +291,11 @@ function statusCls(v){
 }
 function sev(r){ return (r.area==='异常'?1:0)+(r.big_st==='异常'?1:0)+(r.hq_status==='异常'?1:0); }
 function dimData(){ return DATA[state.tab]; }
-function base(){ return dimData().filter(r=> !state.fMonth || (r.date||'').slice(0,7)===state.fMonth); }
+function base(){
+  let rows = dimData();
+  if(state.tab==='duocui' && state.hideClosed) rows = rows.filter(r=> !r.closed);
+  return rows.filter(r=> !state.fMonth || (r.date||'').slice(0,7)===state.fMonth);
+}
 function scope(rows, opt){
   return rows.filter(r=>
     (!opt.hq   || !state.fHq   || r.hq===state.fHq) &&
@@ -563,6 +569,10 @@ function renderAll(){
   renderDims();
   renderTypeChart();
   renderDetail();
+  // 更新时间 + 多催回执筛选器显隐
+  const ut = (DATA.build_time||'');
+  document.getElementById('uptime').textContent = ut ? ('更新时间 '+ut) : '';
+  document.getElementById('hideClosedWrap').style.display = (state.tab==='duocui') ? '' : 'none';
 }
 
 document.querySelectorAll('.tab').forEach(b=>{
@@ -599,6 +609,7 @@ document.querySelector('.sumwrap').addEventListener('click', e=>{
 
 document.getElementById('dKw').addEventListener('input', e=>{ state.kw = e.target.value.trim(); renderDetail(); });
 document.getElementById('onlyAnom').addEventListener('change', e=>{ state.onlyAnom = e.target.checked; renderDetail(); });
+document.getElementById('hideClosed').addEventListener('change', e=>{ state.hideClosed = e.target.checked; renderAll(); });
 
 document.getElementById('dTable').addEventListener('click', e=>{
   const th = e.target.closest('th');
