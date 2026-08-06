@@ -907,8 +907,8 @@
    "hq_status": "正常",
    "receipt": "",
    "closed": false,
-   "agree": "未达成一致，仍在协商中",
-   "need": "",
+   "agree": "已达成一致",
+   "need": "总部领导已给予处理方案【退还用户支架费230元，南京走商誉申请费用】",
    "hqreply": "已反馈佳佳经理，待给方案",
    "sev": 0
   },
@@ -1028,7 +1028,7 @@
    "cnt": 6,
    "s_area": "已联系",
    "s_big": "",
-   "s_hq": "",
+   "s_hq": "是",
    "area_req": true,
    "big_req": true,
    "hq_req": true,
@@ -1039,7 +1039,7 @@
    "closed": false,
    "agree": "未达成一致，仍在协商中",
    "need": "",
-   "hqreply": "",
+   "hqreply": "8.6不接电话",
    "sev": 2
   },
   {
@@ -1115,9 +1115,9 @@
    "hq_status": "异常",
    "receipt": "",
    "closed": false,
-   "agree": "已达成一致",
+   "agree": "未达成一致，仍在协商中",
    "need": "希望总部技术支持对此单给予有效指导，协助区域服务商解决产品问题",
-   "hqreply": "已更换，客户使用试验",
+   "hqreply": "待客户确定是否接受方案",
    "sev": 2
   },
   {
@@ -1132,7 +1132,7 @@
    "cnt": 7,
    "s_area": "已联系",
    "s_big": "",
-   "s_hq": "",
+   "s_hq": "无需联系",
    "area_req": true,
    "big_req": true,
    "hq_req": true,
@@ -1143,7 +1143,7 @@
    "closed": false,
    "agree": "已达成一致",
    "need": "",
-   "hqreply": "",
+   "hqreply": "已达成一致，目前在采购下单配件等上门",
    "sev": 2
   },
   {
@@ -1210,7 +1210,7 @@
    "cnt": 9,
    "s_area": "已联系",
    "s_big": "已联系",
-   "s_hq": "",
+   "s_hq": "未联系",
    "area_req": true,
    "big_req": true,
    "hq_req": true,
@@ -1262,7 +1262,7 @@
    "cnt": 7,
    "s_area": "已联系",
    "s_big": "已联系",
-   "s_hq": "",
+   "s_hq": "未联系",
    "area_req": true,
    "big_req": true,
    "hq_req": true,
@@ -1273,7 +1273,7 @@
    "closed": false,
    "agree": "已达成一致",
    "need": "",
-   "hqreply": "",
+   "hqreply": "特殊用户区域对接中，暂无升级风险，主因是工厂型材技术问题",
    "sev": 1
   },
   {
@@ -1391,20 +1391,20 @@
    "bdate": "2026/7/30 0:00:00",
    "cnt": 4,
    "s_area": "已联系",
-   "s_big": "",
+   "s_big": "已联系",
    "s_hq": "",
    "area_req": true,
    "big_req": true,
    "hq_req": true,
    "area": "正常",
-   "big_st": "异常",
+   "big_st": "正常",
    "hq_status": "异常",
    "receipt": "",
    "closed": false,
    "agree": "",
    "need": "",
    "hqreply": "",
-   "sev": 2
+   "sev": 1
   },
   {
    "big": "崔相波",
@@ -1470,7 +1470,7 @@
    "cnt": 7,
    "s_area": "已联系",
    "s_big": "",
-   "s_hq": "",
+   "s_hq": "未联系",
    "area_req": true,
    "big_req": true,
    "hq_req": true,
@@ -1481,7 +1481,7 @@
    "closed": false,
    "agree": "未达成一致，仍在协商中",
    "need": "用户联系400时请不要再继续下催单，按照备注给客户解释信息补充即可",
-   "hqreply": "",
+   "hqreply": "领导已给予处理意见，已发邮件",
    "sev": 2
   },
   {
@@ -1522,7 +1522,7 @@
    "cnt": 3,
    "s_area": "已联系",
    "s_big": "已联系",
-   "s_hq": "",
+   "s_hq": "不用联系",
    "area_req": true,
    "big_req": true,
    "hq_req": false,
@@ -1533,7 +1533,7 @@
    "closed": false,
    "agree": "其他",
    "need": "否",
-   "hqreply": "",
+   "hqreply": "已申请配件，8.7上门更换",
    "sev": 0
   },
   {
@@ -2042,7 +2042,7 @@
    "cnt": 4,
    "s_area": "未联系（师傅安装问题，赔偿问题由办事处自行和客户协商，区域不便介入客户，同时区域也找了办事处老板陈旭彬在介入处理中）",
    "s_big": "",
-   "s_hq": "",
+   "s_hq": "无需联系",
    "area_req": true,
    "big_req": true,
    "hq_req": true,
@@ -2051,7 +2051,7 @@
    "hq_status": "异常",
    "receipt": "",
    "closed": false,
-   "agree": "未达成一致，仍在协商中",
+   "agree": "已达成一致",
    "need": "",
    "hqreply": "",
    "sev": 3
@@ -2612,21 +2612,21 @@
    "date": "2026-08-05",
    "bdate": "2026/8/8",
    "cnt": 4,
-   "s_area": "",
-   "s_big": "",
+   "s_area": "已联系",
+   "s_big": "已联系",
    "s_hq": "",
    "area_req": true,
    "big_req": true,
    "hq_req": true,
-   "area": "异常",
-   "big_st": "异常",
+   "area": "正常",
+   "big_st": "正常",
    "hq_status": "异常",
    "receipt": "",
    "closed": false,
-   "agree": "",
+   "agree": "是",
    "need": "",
    "hqreply": "",
-   "sev": 3
+   "sev": 1
   },
   {
    "big": "陈磊",
@@ -2753,7 +2753,7 @@
    "hq_status": "正常",
    "receipt": "",
    "closed": false,
-   "agree": "",
+   "agree": "是",
    "need": "",
    "hqreply": "",
    "sev": 2
@@ -2768,13 +2768,13 @@
    "date": "2026-08-05",
    "bdate": "2026/8/6",
    "cnt": 3,
-   "s_area": "",
+   "s_area": "已联系",
    "s_big": "",
    "s_hq": "",
    "area_req": true,
    "big_req": true,
    "hq_req": false,
-   "area": "异常",
+   "area": "正常",
    "big_st": "异常",
    "hq_status": "正常",
    "receipt": "",
@@ -2782,7 +2782,7 @@
    "agree": "",
    "need": "",
    "hqreply": "",
-   "sev": 2
+   "sev": 1
   },
   {
    "big": "池渊",
@@ -2794,22 +2794,22 @@
    "date": "2026-08-05",
    "bdate": "2026/8/7",
    "cnt": 3,
-   "s_area": "",
-   "s_big": "",
+   "s_area": "已联系",
+   "s_big": "已联系",
    "s_hq": "",
    "area_req": true,
    "big_req": true,
    "hq_req": false,
-   "area": "异常",
-   "big_st": "异常",
+   "area": "正常",
+   "big_st": "正常",
    "hq_status": "正常",
    "receipt": "",
    "closed": false,
-   "agree": "",
-   "need": "",
+   "agree": "否",
+   "need": "总部介入解释",
    "hqreply": "",
-   "sev": 2
+   "sev": 0
   }
  ],
- "build_time": "2026-08-06 14:44"
+ "build_time": "2026-08-06 17:25"
 }
