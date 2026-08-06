@@ -2493,7 +2493,7 @@
    "hq_status": "正常",
    "receipt": "已回执",
    "closed": true,
-   "agree": "",
+   "agree": "已达成一致",
    "need": "",
    "hqreply": "",
    "sev": 1
@@ -2603,5 +2603,5 @@
    "sev": 1
   }
  ],
- "build_time": "2026-08-06 09:52"
+ "build_time": "2026-08-06 14:00"
 }
