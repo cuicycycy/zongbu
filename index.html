@@ -43,6 +43,7 @@
   .kpi.anom{border-color:#f6c9c9;} .kpi.anom .num{color:var(--anom);}
   .kpi.ok{border-color:#bfe6cd;} .kpi.ok .num{color:var(--ok);}
   .kpi.plain .num{color:var(--brand);}
+  .kpi.warn{border-color:#f6d58a; background:#fff8ec;} .kpi.warn .num{color:#c47f00;}
   .sumwrap{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; align-items:stretch;}
   .panel{background:var(--card); border:1px solid var(--line); border-radius:11px; min-width:0;
     display:flex; flex-direction:column; max-height:330px; overflow:hidden;}
@@ -78,6 +79,8 @@
   .dtable-wrap thead th:hover{color:var(--brand);}
   .dtable-wrap thead th .ar{font-size:10px; color:var(--brand);}
   .dtable-wrap tbody tr:hover{background:#f7faff;}
+  .dtable-wrap tbody tr.focus{background:#fff5f5; box-shadow:inset 3px 0 0 var(--anom);}
+  .dtable-wrap tbody tr.focus:hover{background:#ffecec;}
   .wrap{max-width:240px; white-space:normal; word-break:break-all; text-align:left;}
   .badge{display:inline-block; padding:1px 8px; border-radius:9px; font-weight:600;}
   .badge.anom{background:var(--anom-soft); color:var(--anom);}
@@ -225,6 +228,7 @@
       <span class="dtitle">明细列表</span>
       <input type="text" id="dKw" placeholder="搜索网点 / 单号 / 投诉类型 / 人员...">
       <label><input type="checkbox" id="onlyAnom" checked> 仅看异常</label>
+      <label><input type="checkbox" id="focusOnly"> 仅看重点关注</label>
       <span class="dcount" id="dCount"></span>
     </div>
     <div class="dtable-wrap"><table id="dTable"></table></div>
@@ -243,7 +247,7 @@ let DATA;
   }
 
 
-const state = {tab:'leiqu', fMonth:'', fBig:'', fMgr:'', fHq:'', kw:'', onlyAnom:true, hideClosed:true, sortKey:null, sortDir:1};
+const state = {tab:'leiqu', fMonth:'', fBig:'', fMgr:'', fHq:'', kw:'', onlyAnom:true, hideClosed:true, focusOnly:false, sortKey:null, sortDir:1};
 
 const COLS = {
   leiqu: [
@@ -271,15 +275,15 @@ const COLS = {
     {k:'oid', t:'来源单号', w:110},
     {k:'latest', t:'最新催单信息', w:150, expand:true},
     {k:'cnt', t:'应催次数', w:80},
-    {k:'area', t:'区域', w:80},
-    {k:'big_st', t:'大区', w:80},
-    {k:'hq_status', t:'总部', w:80},
+    {k:'s_area', t:'区域联系', w:115, wrap:true},
+    {k:'s_big', t:'大区联系', w:115, wrap:true},
+    {k:'s_hq', t:'总部联系', w:115, wrap:true},
     {k:'hqreply', t:'总部回复', w:160, wrap:true},
     {k:'need', t:'需总部支持', w:200, wrap:true}
   ]
 };
 
-const STATUS_KEYS = {area:1, big_st:1, hq_status:1, step1:1, step2:1, final:1};
+const STATUS_KEYS = {area:1, big_st:1, hq_status:1, step1:1, step2:1, final:1, s_area:1, s_big:1, s_hq:1};
 
 function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function stripType(s){ s=s||''; const i=s.lastIndexOf('/'); return i>=0 ? s.slice(i+1) : s; }
@@ -391,13 +395,17 @@ function renderOverview(){
     const aA = rows.filter(r=>r.area==='异常').length;
     const aB = rows.filter(r=>r.big_st==='异常').length;
     const aH = rows.filter(r=>r.hq_status==='异常').length;
+    // 重点关注（跨闭环统计，含已回执）：基于全量按当前筛选维度
+    const allRows = scope(dimData(), {hq:true, big:true, mgr:true}).filter(r=> !state.fMonth || (r.date||'').slice(0,7)===state.fMonth);
+    const focusCnt = allRows.filter(r=> r.focus).length;
     cards = [
       {lab:'累计发生', num:total, cls:'plain'},
       {lab:'已闭环', num:closed, cls:'ok'},
       {lab:'未闭环', num:open, cls:'anom'},
       {lab:'区域未按标准', num:aA, cls:'anom'},
       {lab:'大区未按标准', num:aB, cls:'anom'},
-      {lab:'总部未按标准', num:aH, cls:'anom'}
+      {lab:'总部未按标准', num:aH, cls:'anom'},
+      {lab:'重点关注', num:focusCnt, cls:'warn'}
     ];
   }
   let html='';
@@ -512,6 +520,7 @@ function cellHTML(r, c){
   }
   if(STATUS_KEYS[c.k]){
     const cls = statusCls(v);
+    if(v==='' || v==null) return '<span class="badge anom">未填</span>';
     if(cls) return '<span class="badge '+cls+'">'+esc(v)+'</span>';
     return esc(v);
   }
@@ -520,15 +529,19 @@ function cellHTML(r, c){
 }
 
 function renderDetail(){
-  let rows = scope(base(), {hq:true, big:true, mgr:true});
-  if(state.onlyAnom) rows = rows.filter(r=> r.area==='异常'||r.big_st==='异常'||r.hq_status==='异常');
+  let rows = dimData();
+  if(state.tab==='duocui' && state.hideClosed && !state.focusOnly) rows = rows.filter(r=> !r.closed);
+  rows = rows.filter(r=> !state.fMonth || (r.date||'').slice(0,7)===state.fMonth);
+  rows = scope(rows, {hq:true, big:true, mgr:true});
+  if(state.focusOnly) rows = rows.filter(r=> r.focus);
+  else if(state.onlyAnom) rows = rows.filter(r=> r.area==='异常'||r.big_st==='异常'||r.hq_status==='异常');
   if(state.kw){
     const k = state.kw.toLowerCase();
     rows = rows.filter(r=> [r.shop,r.oid,stripType(r.ctype),r.big,r.mgr,r.hq,r.latest,r.hqreply,r.need,r.reason,r.final]
       .some(x=> (x||'').toLowerCase().includes(k)));
   }
   if(state.sortKey===null){
-    rows = rows.slice().sort((a,b)=> sev(b)-sev(a));
+    rows = rows.slice().sort((a,b)=> (b.focus?1:0)-(a.focus?1:0) || sev(b)-sev(a));
   } else {
     const k = state.sortKey;
     rows = rows.slice().sort((a,b)=>{
@@ -552,7 +565,8 @@ function renderDetail(){
   html += '</tr></thead><tbody>';
   if(rows.length===0){ html += '<tr><td colspan="'+cols.length+'" style="text-align:center;color:var(--sub);padding:20px">无匹配记录</td></tr>'; }
   rows.forEach(r=>{
-    html += '<tr>';
+    const fc = r.focus ? ' class="focus"' : '';
+    html += '<tr'+fc+'>';
     cols.forEach(c=>{ html += '<td>'+cellHTML(r,c)+'</td>'; });
     html += '</tr>';
   });
@@ -610,6 +624,7 @@ document.querySelector('.sumwrap').addEventListener('click', e=>{
 document.getElementById('dKw').addEventListener('input', e=>{ state.kw = e.target.value.trim(); renderDetail(); });
 document.getElementById('onlyAnom').addEventListener('change', e=>{ state.onlyAnom = e.target.checked; renderDetail(); });
 document.getElementById('hideClosed').addEventListener('change', e=>{ state.hideClosed = e.target.checked; renderAll(); });
+document.getElementById('focusOnly').addEventListener('change', e=>{ state.focusOnly = e.target.checked; renderAll(); });
 
 document.getElementById('dTable').addEventListener('click', e=>{
   const th = e.target.closest('th');
