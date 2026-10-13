@@ -31,6 +31,11 @@
           background:#fff;outline:none;min-width:280px;flex:0 1 320px}
   #qInput:focus{border-color:var(--blue)}
   .qhint{font-size:12.5px;color:var(--sub);font-weight:600}
+  .qbtns{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 4px}
+  .qbtn{height:34px;border:1px solid var(--line);border-radius:18px;padding:0 14px;font-size:13px;
+        font-weight:600;background:#fff;color:var(--ink);cursor:pointer;transition:.15s}
+  .qbtn:hover{border-color:var(--blue);color:var(--blue)}
+  .qbtn.active{background:var(--blue);border-color:var(--blue);color:#fff}
   .note-line{font-size:12.5px;color:var(--sub);background:#f0f4fb;border:1px solid var(--line);
              border-radius:10px;padding:9px 12px;margin:10px 0 4px;line-height:1.75}
   .note-line b{color:var(--ink)}
@@ -90,8 +95,9 @@
     <div class="qbar">
       <input id="qInput" placeholder="输入查询内容（如：总部 或 姓名+时间）" onkeydown="if(event.key==='Enter')doQuery()" />
       <button class="tbtn" id="qBtn" onclick="doQuery()">查询</button>
-      <span class="qhint" id="qHint">请输入查询内容（如：姓名+时间）查看对应 KPI；输入「总部」查看全部</span>
+      <span class="qhint" id="qHint">点击下面按钮，或输入查询内容查看对应 KPI</span>
     </div>
+    <div class="qbtns" id="qBtns"></div>
     <div class="toolbar">
       <select id="monthSel" onchange="setMonth(this.value)"></select>
       <button class="tbtn" onclick="expandAll(true)">全部展开</button>
@@ -307,9 +313,11 @@ function renderGrid(){
 function doQuery(){
   const q = document.getElementById("qInput").value.trim();
   const hint = document.getElementById("qHint");
+  // 高亮当前选中的按钮
+  document.querySelectorAll(".qbtn").forEach(b=> b.classList.toggle("active", b.dataset.q===q));
   if(q===""){
     curFiltered = [];
-    hint.textContent = "请输入查询内容（如：姓名+时间）查看对应 KPI；输入「总部」查看全部";
+    hint.textContent = "点击下面按钮，或输入查询内容查看对应 KPI";
     hint.style.color = "var(--sub)";
     renderGrid();
     return;
@@ -343,6 +351,19 @@ function setMonth(mo){
   });
   const covered = KPI.people.reduce((a,p)=>a+(p.items.some(x=>x.has)?1:0),0);
   document.getElementById("foot").textContent = "数据源：基础指标数据源（月终版） · 口径与「区域自查业绩看板」一致 · 生成于本机";
+  // 生成查询快捷按钮：总部(全部) + 各查询码
+  const qBtns = document.getElementById("qBtns");
+  const keys = Object.keys(KPI.access || {});
+  const order = [];
+  if(keys.includes("总部")) order.push("总部");
+  keys.filter(k=> k!=="总部" && k!=="全部" && k!=="all").forEach(k=> order.push(k));
+  order.forEach(k=>{
+    const b=document.createElement("button");
+    b.className="qbtn"; b.dataset.q=k;
+    b.textContent = (k==="总部") ? "总部（全部）" : k;
+    b.onclick = ()=>{ document.getElementById("qInput").value=k; doQuery(); };
+    qBtns.appendChild(b);
+  });
   setMonth(KPI.monthCur);
 })();
 </script>
