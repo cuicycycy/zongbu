@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>总部 KPI 达成看板</title>
+<style>
+  :root{
+    --bg:#f5f7fa; --card:#ffffff; --ink:#1f2d3d; --sub:#67748a; --line:#e6ebf2;
+    --green:#1e9e5a; --yellow:#e3a008; --red:#d8392b; --blue:#2f6fed; --blue2:#eaf1ff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+       background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5}
+  .wrap{margin:0 auto;padding:14px 18px}
+  .topbar{position:sticky;top:0;z-index:50;background:var(--bg);padding-top:14px;padding-bottom:8px;
+          border-bottom:1px solid var(--line);box-shadow:0 4px 10px rgba(0,0,0,.04)}
+  header{background:linear-gradient(135deg,#2f6fed,#1b4fd1);color:#fff;border-radius:14px;
+         padding:14px 20px;box-shadow:0 6px 18px rgba(47,111,237,.25)}
+  header h1{margin:0;font-size:20px;font-weight:700}
+  header .sub{font-size:12.5px;opacity:.9;margin-top:3px}
+  .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0 2px}
+  #monthSel{height:42px;border:1px solid var(--line);border-radius:10px;padding:0 10px;font-size:14px;background:#fff;outline:none}
+  #monthSel:focus{border-color:var(--blue)}
+  .tbtn{padding:0 14px;height:42px;border:1px solid var(--line);background:#fff;color:var(--sub);
+        border-radius:10px;font-size:13px;font-weight:600;cursor:pointer}
+  .tbtn:hover{border-color:var(--blue);color:var(--blue)}
+  .toolbar .meta{font-size:12.5px;color:var(--sub);margin-left:auto}
+  .qbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0 2px}
+  #qInput{height:42px;border:1px solid var(--line);border-radius:10px;padding:0 12px;font-size:14px;
+          background:#fff;outline:none;min-width:280px;flex:0 1 320px}
+  #qInput:focus{border-color:var(--blue)}
+  .qhint{font-size:12.5px;color:var(--sub);font-weight:600}
+  .note-line{font-size:12.5px;color:var(--sub);background:#f0f4fb;border:1px solid var(--line);
+             border-radius:10px;padding:9px 12px;margin:10px 0 4px;line-height:1.75}
+  .note-line b{color:var(--ink)}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:14px}
+  .pcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 15px;
+         cursor:pointer;transition:.15s;align-self:start}
+  .pcard:hover{border-color:#b9cdf7;box-shadow:0 6px 18px rgba(47,111,237,.10)}
+  .pcard.open{grid-column:1/-1;cursor:default;border-color:var(--blue);box-shadow:0 8px 24px rgba(47,111,237,.14)}
+  .phead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+  .pname{font-size:17px;font-weight:800}
+  .pname .tag{font-size:11px;font-weight:600;color:var(--blue);background:var(--blue2);
+              padding:2px 8px;border-radius:20px;margin-left:7px;vertical-align:middle}
+  .pname .tag.gray{color:var(--sub);background:#eef1f6}
+  .pscore{font-size:22px;font-weight:800;line-height:1}
+  .pscore .u{font-size:13px;font-weight:700}
+  .pmeta{font-size:11.5px;color:var(--sub);margin:4px 0 10px}
+  .items{display:flex;flex-direction:column;gap:1px}
+  .krow{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:10px;
+        padding:6px 2px;border-bottom:1px dashed var(--line);font-size:13px}
+  .krow:last-child{border-bottom:none}
+  .kname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .kname .kw{font-size:11px;color:var(--sub);margin-left:5px}
+  .kval{font-weight:700;font-variant-numeric:tabular-nums;text-align:right;min-width:62px}
+  .kst{font-size:11px;font-weight:600;padding:1px 8px;border-radius:20px;min-width:52px;text-align:center}
+  .kst.green{background:#e8f6ee;color:var(--green)}
+  .kst.red{background:#fdecea;color:var(--red)}
+  .kst.gray{background:#eef1f6;color:var(--sub)}
+  .g{color:var(--green)} .r{color:var(--red)} .y{color:var(--yellow)} .n{color:var(--sub)}
+  .pexpand{font-size:11.5px;color:var(--blue);font-weight:600;text-align:right;margin-top:9px}
+  .pdetail{display:none;margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+  .pcard.open .pdetail{display:block}
+  .dtitle{font-size:13px;font-weight:700;margin:2px 0 8px;display:flex;align-items:center;gap:7px}
+  .dtitle:before{content:"";width:4px;height:14px;background:var(--blue);border-radius:3px}
+  .trend{width:100%;height:150px;display:block}
+  .tblwrap{overflow:auto;max-height:52vh;border:1px solid var(--line);border-radius:12px;margin-top:6px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;background:#fff}
+  th,td{padding:7px 10px;text-align:center;border-bottom:1px solid var(--line);white-space:nowrap}
+  th{background:#f0f4fb;color:var(--sub);font-weight:600;position:sticky;top:0;z-index:2;box-shadow:0 1px 0 var(--line)}
+  th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:#fff;z-index:1;min-width:132px}
+  thead th:first-child{background:#f0f4fb;z-index:3}
+  tr:last-child td{border-bottom:none}
+  .tdmiss{color:#b9c3d2}
+  .fbk{font-size:10px;color:var(--yellow);font-weight:600;margin-left:3px;vertical-align:middle}
+  .empty{background:var(--card);border:1px dashed var(--line);border-radius:12px;padding:30px;text-align:center;color:var(--sub)}
+  footer{margin-top:26px;font-size:11.5px;color:var(--sub);text-align:center;line-height:1.7}
+  @media(max-width:1180px){.grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:640px){.wrap{padding:10px}.grid{grid-template-columns:1fr}.pscore{font-size:19px}header h1{font-size:18px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <header>
+      <h1>总部 KPI 达成看板</h1>
+      <div class="sub">8 人考核谱系 · 逐月达成与趋势 · 口径与主看板一致</div>
+    </header>
+    <div class="qbar">
+      <input id="qInput" placeholder="输入查询内容（如：总部 或 姓名+时间）" onkeydown="if(event.key==='Enter')doQuery()" />
+      <button class="tbtn" id="qBtn" onclick="doQuery()">查询</button>
+      <span class="qhint" id="qHint">请输入查询内容（如：姓名+时间）查看对应 KPI；输入「总部」查看全部</span>
+    </div>
+    <div class="toolbar">
+      <select id="monthSel" onchange="setMonth(this.value)"></select>
+      <button class="tbtn" onclick="expandAll(true)">全部展开</button>
+      <button class="tbtn" onclick="expandAll(false)">全部收起</button>
+      <div class="meta" id="meta"></div>
+    </div>
+  </div>
+  <div class="grid" id="grid"></div>
+  <footer id="foot"></footer>
+</div>
+<script>
+const KPI = /*__KPIDATA__*/{"months": ["2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09"], "monthCur": "2026-09", "monthPrev": "2026-08", "people": [{"name": "宋家僖", "scope": "zone", "role": "考核所属片区", "scopeLabel": "宋家僖", "items": [{"name": "净按约且一次就好", "weight": 0.2, "has": true, "kind": "higher", "target": 0.65, "mid": "m_netok", "otkey": null, "unit": "", "months": {"2026-03": {"actual": 0.6744042304786759, "raw": [9820.0, 14561.0], "coef": 1.0}, "2026-04": {"actual": 0.6662361343260903, "raw": [8769.0, 13162.0], "coef": 1.0}, "2026-05": {"actual": 0.6806728916555506, "raw": [9185.0, 13494.0], "coef": 1.0}, "2026-06": {"actual": 0.6526899845483917, "raw": [9293.0, 14238.0], "coef": 1.0}, "2026-07": {"actual": 0.6662062297119967, "raw": [9646.0, 14479.0], "coef": 1.0}, "2026-08": {"actual": 0.6478936842784336, "raw": [10043.0, 15501.0], "coef": 0.9967595142745133}, "2026-09": {"actual": 0.6580800965989133, "raw": [9810.0, 14907.0], "coef": 1.0}}, "disp": null}, {"name": "超期遗留", "weight": 0.2, "has": true, "kind": "lower", "target": 0.1, "mid": "m_overdue", "otkey": null, "unit": "", "months": {"2026-04": {"actual": 0.09966871431187468, "raw": [5987.0, 60069.0], "coef": 1.0}, "2026-05": {"actual": 0.08825944170771757, "raw": [5590.0, 63336.0], "coef": 1.0}, "2026-06": {"actual": 0.09224433372692452, "raw": [6406.0, 69446.0], "coef": 1.0}, "2026-07": {"actual": 0.09640179910044977, "raw": [7073.0, 73370.0], "coef": 1.0}, "2026-08": {"actual": 0.09352471843813336, "raw": [7291.0, 77958.0], "coef": 1.0}, "2026-09": {"actual": 0.09464902561428665, "raw": [7261.0, 76715.0], "coef": 1.0}}, "disp": null}, {"name": "网络经营", "weight": 0.2, "has": true, "kind": "higher", "target": 1.0, "mid": "m_netstd", "otkey": null, "unit": "", "months": {"2026-02": {"actual": 0.7341772151898734, "raw": [58, 79], "coef": 0.7341772151898734}, "2026-03": {"actual": 0.8831168831168831, "raw": [68, 77], "coef": 0.8831168831168831}, "2026-04": {"actual": 0.9620253164556962, "raw": [76, 79], "coef": 0.9620253164556962}, "2026-05": {"actual": 0.9625, "raw": [77, 80], "coef": 0.9625}, "2026-06": {"actual": 0.8717948717948718, "raw": [68, 78], "coef": 0.8717948717948718}, "2026-07": {"actual": 0.9466666666666667, "raw": [71, 75], "coef": 0.9466666666666667}, "2026-08": {"actual": 0.9459459459459459, "raw": [70, 74], "coef": 0.9459459459459459}, "2026-09": {"actual": 0.8961038961038961, "raw": [69, 77], "coef": 0.8961038961038961}}, "disp": null}, {"name": "售后费用管控", "weight": 0.1, "has": true, "kind": "cost", "target": null, "mid": "m_cost", "otkey": null, "unit": "", "months": {"2026-07": {"actual": 0.8649221919424094, "raw": [6304407.91, 7288988.5], "coef": 0.8649221919424094}, "2026-08": {"actual": 0.8737699997160234, "raw": [7229596.43, 8274026.84], "coef": 0.8737699997160234}}, "disp": null}, {"name": "雷区同比下降", "weight": 0.1, "has": true, "kind": "yoy", "target": 0.2, "mid": "yoy_lei", "otkey": null, "unit": "", "months": {"2026-02": {"actual": -3.8095238095238093, "raw": [37, 21], "coef": 0.0}, "2026-03": {"actual": -4.375, "raw": [45, 24], "coef": 0.0}, "2026-04": {"actual": -3.7878787878787876, "raw": [58, 33], "coef": 0.0}, "2026-05": {"actual": -4.583333333333333, "raw": [69, 36], "coef": 0.0}, "2026-06": {"actual": -4.186046511627907, "raw": [79, 43], "coef": 0.0}, "2026-07": {"actual": -4.565217391304348, "raw": [88, 46], "coef": 0.0}, "2026-08": {"actual": -3.75, "raw": [98, 56], "coef": 0.0}, "2026-09": {"actual": -3.076923076923077, "raw": [105, 65], "coef": 0.0}}, "disp": null}, {"name": "多次联系同比下降", "weight": 0.1, "has": true, "kind": "yoy", "target": 0.25, "mid": "yoy_mul", "otkey": null, "unit": "", "months": {"2026-02": {"actual": -2.909090909090909, "raw": [247, 143], "coef": 0.0}, "2026-03": {"actual": -3.103448275862069, "raw": [309, 174], "coef": 0.0}, "2026-04": {"actual": -2.9591836734693877, "raw": [341, 196], "coef": 0.0}, "2026-05": {"actual": -2.958904109589041, "raw": [381, 219], "coef": 0.0}, "2026-06": {"actual": -2.6509803921568627, "raw": [424, 255], "coef": 0.0}, "2026-07": {"actual": -2.3554006968641117, "raw": [456, 287], "coef": 0.0}, "2026-08": {"actual": -2.0923076923076924, "raw": [495, 325], "coef": 0.0}, "2026-09": {"actual": -1.7540106951871657, "raw": [538, 374], "coef": 0.0}}, "disp": null}, {"name": "关键岗位合格率", "weight": 0.05, "has": true, "kind": "higher", "target": 0.85, "mid": "m_keyrate", "otkey": null, "unit": "", "months": {"2026-08": {"actual": 0.8754098360655738, "raw": [267, 305], "coef": 1.0}, "2026-09": {"actual": 0.8488745980707395, "raw": [264, 311], "coef": 0.9986759977302818}}, "disp": null}, {"name": "工程师合格率", "weight": 0.05, "has": true, "kind": "higher", "target": 0.85, "mid": "m_engineer", "otkey": null, "unit": "", "months": {"2026-05": {"actual": 0.9403437815975733, "raw": [930, 989], "coef": 1.0}, "2026-06": {"actual": 0.8746268656716418, "raw": [879, 1005], "coef": 1.0}, "2026-07": {"actual": 0.8701431492842536, "raw": [851, 978], "coef": 1.0}, "2026-08": {"actual": 0.8722382324687801, "raw": [908, 1041], "coef": 1.0}}, "disp": null}], "weightCovered": 0.9999999999999999, "weightTotal": 1.0, "scoreByMonth": {"2026-02": {"score": 0.3670886075949367, "weightCovered": 0.4, "sum": 0.1468354430379747, "fallback": []}, "2026-03": {"score": 0.6277056277056278, "weightCovered": 0.6, "sum": 0.37662337662337664, "fallback": []}, "2026-04": {"score": 0.7405063291139241, "weightCovered": 0.8, "sum": 0.5924050632911393, "fallback": []}, "2026-05": {"score": 0.7558823529411764, "weightCovered": 0.8500000000000001, "sum": 0.6425000000000001, "fallback": []}, "2026-06": {"score": 0.7345399698340875, "weightCovered": 0.8500000000000001, "sum": 0.6243589743589745, "fallback": []}, "2026-07": {"score": 0.7640268973974466, "weightCovered": 0.9500000000000001, "sum": 0.7258255525275743, "fallback": []}, "2026-08": {"score": 0.7759180920156943, "weightCovered": 1.0, "sum": 0.7759180920156943, "fallback": []}, "2026-09": {"score": 0.7665315790788958, "weightCovered": 1.0, "sum": 0.7665315790788958, "fallback": ["售后费用管控→2026-08", "工程师合格率→2026-08"]}}}, {"name": "刘玉仪", "scope": "zone", "role": "考核所属片区", "scopeLabel": "刘玉仪", "items": [{"name": "净按约且一次就好", "weight": 0.2, "has": true, "kind": "higher", "target": 0.65, "mid": "m_netok", "otkey": null, "unit": "", "months": {"2026-03": {"actual": 0.6781128404669261, "raw": [13942.0, 20560.0], "coef": 1.0}, "2026-04": {"actual": 0.7036996971008221, "raw": [13010.0, 18488.0], "coef": 1.0}, "2026-05": {"actual": 0.6859388458225667, "raw": [12742.0, 18576.0], "coef": 1.0}, "2026-06": {"actual": 0.6547595089555243, "raw": [13014.0, 19876.0], "coef": 1.0}, "2026-07": {"actual": 0.6539466806063774, "raw": [13761.0, 21043.0], "coef": 1.0}, "2026-08": {"actual": 0.65917502787068, "raw": [14782.0, 22425.0], "coef": 1.0}, "2026-09": {"actual": 0.6630749513457066, "raw": [13969.0, 21067.0], "coef": 1.0}}, "disp": null}, {"name": "超期遗留", "weight": 0.2, "has": true, "kind": "lower", "target": 0.1, "mid": "m_overdue", "otkey": null, "unit": "", "months": {"2026-04": {"actual": 0.0937432777111951, "raw": [6101.0, 65082.0], "coef": 1.0}, "2026-05": {"actual": 0.08860444542740241, "raw": [6410.0, 72344.0], "coef": 1.0}, "2026-06": {"actual": 0.08514917421417155, "raw": [6393.0, 75080.0], "coef": 1.0}, "2026-07": {"actual": 0.09495174376570767, "raw": [8274.0, 87139.0], "coef": 1.0}, "2026-08": {"actual": 0.09013936196503594, "raw": [8389.0, 93067.0], "coef": 1.0}, "2026-09": {"actual": 0.09351372861122165, "raw": [7990.0, 85442.0], "coef": 1.0}}, "disp": null}, {"name": "网络经营", "weight": 0.2, "has": true, "kind": "higher", "target": 1.0, "mid": "m_netstd", "otkey": null, "unit": "", "months": {"2026-02": {"actual": 0.9066666666666666, "raw": [68, 75], "coef": 0.9066666666666666}, "2026-03": {"actual": 0.9342105263157895, "raw": [71, 76], "coef": 0.9342105263157895}, "2026-04": {"actual": 0.9487179487179487, "raw": [74, 78], "coef": 0.9487179487179487}, "2026-05": {"actual": 0.9210526315789473, "raw": [70, 76], "coef": 0.9210526315789473}, "2026-06": {"actual": 0.935064935064935, "raw": [72, 77], "coef": 0.935064935064935}, "2026-07": {"actual": 0.9487179487179487, "raw": [74, 78], "coef": 0.9487179487179487}, "2026-08": {"actual": 0.9240506329113924, "raw": [73, 79], "coef": 0.9240506329113924}, "2026-09": {"actual": 0.9036144578313253, "raw": [75, 83], "coef": 0.9036144578313253}}, "disp": null}, {"name": "多次联系同比下降", "weight": 0.1, "has": true, "kind": "yoy", "target": 0.25, "mid": "yoy_mul", "otkey": null, "unit": "", "months": {"2026-02": {"actual": -5.442622950819672, "raw": [144, 61], "coef": 0.0}, "2026-03": {"actual": -4.511627906976744, "raw": [183, 86], "coef": 0.0}, "2026-04": {"actual": -3.4642857142857144, "raw": [209, 112], "coef": 0.0}, "2026-05": {"actual": -3.5294117647058822, "raw": [256, 136], "coef": 0.0}, "2026-06": {"actual": -1.8848167539267016, "raw": [281, 191], "coef": 0.0}, "2026-07": {"actual": -1.2780082987551866, "raw": [318, 241], "coef": 0.0}, "2026-08": {"actual": -0.21951219512195122, "raw": [346, 328], "coef": 0.0}, "2026-09": {"actual": 1.162962962962963, "raw": [383, 540], "coef": 1.0}}, "disp": null}, {"name": "雷区同比下降", "weight": 0.1, "has": true, "kind": "yoy", "target": 0.2, "mid": "yoy_lei", "otkey": null, "unit": "", "months": {"2026-02": {"actual": 0.9259259259259258, "raw": [22, 27], "coef": 0.9259259259259258}, "2026-03": {"actual": 0.9677419354838709, "raw": [25, 31], "coef": 0.9677419354838709}, "2026-04": {"actual": -0.14705882352941174, "raw": [35, 34], "coef": 0.0}, "2026-05": {"actual": -0.5405405405405406, "raw": [41, 37], "coef": 0.0}, "2026-06": {"actual": -0.3409090909090909, "raw": [47, 44], "coef": 0.0}, "2026-07": {"actual": -0.37037037037037035, "raw": [58, 54], "coef": 0.0}, "2026-08": {"actual": -0.15151515151515152, "raw": [68, 66], "coef": 0.0}, "2026-09": {"actual": 0.1282051282051282, "raw": [76, 78], "coef": 0.1282051282051282}}, "disp": null}, {"name": "售后费用管控", "weight": 0.1, "has": true, "kind": "cost", "target": null, "mid": "m_cost", "otkey": null, "unit": "", "months": {"2026-07": {"actual": 0.8917056377758842, "raw": [8408379.03, 9429545.66], "coef": 0.8917056377758842}, "2026-08": {"actual": 0.8952477647167326, "raw": [9610598.23, 10735126.75], "coef": 0.8952477647167326}}, "disp": null}, {"name": "关键岗位合格率", "weight": 0.05, "has": true, "kind": "higher", "target": 0.85, "mid": "m_keyrate", "otkey": null, "unit": "", "months": {"2026-08": {"actual": 0.8125, "raw": [195, 240], "coef": 0.9558823529411765}, "2026-09": {"actual": 0.7925311203319502, "raw": [191, 241], "coef": 0.9323895533317061}}, "disp": null}, {"name": "工程师合格率", "weight": 0.05, "has": true, "kind": "higher", "target": 0.85, "mid": "m_engineer", "otkey": null, "unit": "", "months": {"2026-05": {"actual": 0.9342465753424658, "raw": [1023, 1095], "coef": 1.0}, "2026-06": {"actual": 0.7954128440366972, "raw": [867, 1090], "coef": 0.9357798165137614}, "2026-07": {"actual": 0.8292237442922374, "raw": [908, 1095], "coef": 0.9755573462261617}, "2026-08": {"actual": 0.8232642019837692, "raw": [913, 1109], "coef": 0.9685461199809049}}, "disp": null}], "weightCovered": 0.9999999999999999, "weightTotal": 1.0, "scoreByMonth": {"2026-02": {"score": 0.6848148148148148, "weightCovered": 0.4, "sum": 0.2739259259259259, "fallback": []}, "2026-03": {"score": 0.8060271646859084, "weightCovered": 0.6, "sum": 0.483616298811545, "fallback": []}, "2026-04": {"score": 0.7371794871794871, "weightCovered": 0.8, "sum": 0.5897435897435898, "fallback": []}, "2026-05": {"score": 0.7461300309597524, "weightCovered": 0.8500000000000001, "sum": 0.6342105263157896, "fallback": []}, "2026-06": {"score": 0.7456493856925589, "weightCovered": 0.8500000000000001, "sum": 0.6338019778386751, "fallback": []}, "2026-07": {"score": 0.7659916008763014, "weightCovered": 0.9500000000000001, "sum": 0.7276920208324863, "fallback": []}, "2026-08": {"score": 0.7705563267000558, "weightCovered": 1.0, "sum": 0.7705563267000558, "fallback": []}, "2026-09": {"score": 0.8781149645240816, "weightCovered": 1.0, "sum": 0.8781149645240816, "fallback": ["售后费用管控→2026-08", "工程师合格率→2026-08"]}}}, {"name": "梁杰锋", "scope": "zone", "role": "考核所属片区", "scopeLabel": "梁杰锋", "items": [{"name": "超期遗留", "weight": 0.2, "has": true, "kind": "lower", "target": 0.1, "mid": "m_overdue", "otkey": null, "unit": "", "months": {"2026-04": {"actual": 0.10187667560321716, "raw": [6954.0, 68259.0], "coef": 0.9815789473684211}, "2026-05": {"actual": 0.08582859028293327, "raw": [6243.0, 72738.0], "coef": 1.0}, "2026-06": {"actual": 0.09279177220829143, "raw": [7290.0, 78563.0], "coef": 1.0}, "2026-07": {"actual": 0.09515993853890208, "raw": [8175.0, 85908.0], "coef": 1.0}, "2026-08": {"actual": 0.0901311846573883, "raw": [8121.0, 90102.0], "coef": 1.0}, "2026-09": {"actual": 0.0958794416949341, "raw": [8621.0, 89915.0], "coef": 1.0}}, "disp": null}, {"name": "净按约且一次就好", "weight": 0.2, "has": true, "kind": "higher", "target": 0.65, "mid": "m_netok", "otkey": null, "unit": "", "months": {"2026-03": {"actual": 0.6691232379949699, "raw": [11440.0, 17097.0], "coef": 1.0}, "2026-04": {"actual": 0.663594470046083, "raw": [10080.0, 15190.0], "coef": 1.0}, "2026-05": {"actual": 0.6748147185021454, "raw": [10380.0, 15382.0], "coef": 1.0}, "2026-06": {"actual": 0.643536301240476, "raw": [10220.0, 15881.0], "coef": 0.9900558480622708}, "2026-07": {"actual": 0.6525722339675828, "raw": [11112.0, 17028.0], "coef": 1.0}, "2026-08": {"actual": 0.6487647091629022, "raw": [11633.0, 17931.0], "coef": 0.9980995525583111}, "2026-09": {"actual": 0.6424235416546222, "raw": [11112.0, 17297.0], "coef": 0.9883439102378804}}, "disp": null}, {"name": "网络经营", "weight": 0.2, "has": true, "kind": "higher", "target": 1.0, "mid": "m_netstd", "otkey": null, "unit": "", "months": {"2026-02": {"actual": 0.8243243243243243, "raw": [61, 74], "coef": 0.8243243243243243}, "2026-03": {"actual": 0.9078947368421053, "raw": [69, 76], "coef": 0.9078947368421053}, "2026-04": {"actual": 0.9090909090909091, "raw": [70, 77], "coef": 0.9090909090909091}, "2026-05": {"actual": 0.9857142857142858, "raw": [69, 70], "coef": 0.9857142857142858}, "2026-06": {"actual": 0.9428571428571428, "raw": [66, 70], "coef": 0.9428571428571428}, "2026-07": {"actual": 0.971830985915493, "raw": [69, 71], "coef": 0.971830985915493}, "2026-08": {"actual": 0.9577464788732394, "raw": [68, 71], "coef": 0.9577464788732394}, "2026-09": {"actual": 0.9583333333333334, "raw": [69, 72], "coef": 0.9583333333333334}}, "disp": null}, {"name": "售后费用管控", "weight": 0.1, "has": true, "kind": "cost", "target": null, "mid": "m_cost", "otkey": null, "unit": "", "months": {"2026-07": {"actual": 0.8622812149309812, "raw": [7269861.84, 8430963.95], "coef": 0.8622812149309812}, "2026-08": {"actual": 0.8774357239389384, "raw": [8305900.12, 9466106.62], "coef": 0.8774357239389384}}, "disp": null}, {"name": "雷区同比下降", "weight": 0.1, "has": true, "kind": "yoy", "target": 0.2, "mid": "yoy_lei", "otkey": null, "unit": "", "months": {"2026-02": {"actual": -1.1904761904761902, "raw": [26, 21], "coef": 0.0}, "2026-03": {"actual": -2.3076923076923075, "raw": [38, 26], "coef": 0.0}, "2026-04": {"actual": -3.064516129032258, "raw": [50, 31], "coef": 0.0}, "2026-05": {"actual": -4.166666666666667, "raw": [66, 36], "coef": 0.0}, "2026-06": {"actual": -4.404761904761904, "raw": [79, 42], "coef": 0.0}, "2026-07": {"actual": -4.199999999999999, "raw": [92, 50], "coef": 0.0}, "2026-08": {"actual": -3.4126984126984126, "raw": [106, 63], "coef": 0.0}, "2026-09": {"actual": -3.263888888888889, "raw": [119, 72], "coef": 0.0}}, "disp": null}, {"name": "多次联系同比下降", "weight": 0.1, "has": true, "kind": "yoy", "target": 0.25, "mid": "yoy_mul", "otkey": null, "unit": "", "months": {"2026-02": {"actual": -2.0547945205479454, "raw": [221, 146], "coef": 0.0}, "2026-03": {"actual": -2.4457142857142857, "raw": [282, 175], "coef": 0.0}, "2026-04": {"actual": -2.77720207253886, "raw": [327, 193], "coef": 0.0}, "2026-05": {"actual": -2.4504504504504503, "raw": [358, 222], "coef": 0.0}, "2026-06": {"actual": -2.2745098039215685, "raw": [400, 255], "coef": 0.0}, "2026-07": {"actual": -1.903448275862069, "raw": [428, 290], "coef": 0.0}, "2026-08": {"actual": -1.8126888217522659, "raw": [481, 331], "coef": 0.0}, "2026-09": {"actual": -1.5392670157068062, "raw": [529, 382], "coef": 0.0}}, "disp": null}, {"name": "关键岗位合格率", "weight": 0.05, "has": true, "kind": "higher", "target": 0.85, "mid": "m_keyrate", "otkey": null, "unit": "", "months": {"2026-08": {"actual": 0.6814814814814815, "raw": [184, 270], "coef": 0.8017429193899782}, "2026-09": {"actual": 0.8307086614173228, "raw": [211, 254], "coef": 0.9773043075497916}}, "disp": null}, {"name": "工程师合格率", "weight": 0.05, "has": true, "kind": "higher", "target": 0.85, "mid": "m_engineer", "otkey": null, "unit": "", "months": {"2026-05": {"actual": 0.9321100917431193, "raw": [1016, 1090], "coef": 1.0}, "2026-06": {"actual": 0.8342059336823735, "raw": [956, 1146], "coef": 0.9814187455086747}, "2026-07": {"actual": 0.8360215053763441, "raw": [933, 1116], "coef": 0.9835547122074637}, "2026-08": {"actual": 0.8553682342502218, "raw": [964, 1127], "coef": 1.0}}, "disp": null}], "weightCovered": 0.9999999999999999, "weightTotal": 1.0, "scoreByMonth": {"2026-02": {"score": 0.41216216216216217, "weightCovered": 0.4, "sum": 0.16486486486486487, "fallback": []}, "2026-03": {"score": 0.6359649122807018, "weightCovered": 0.6, "sum": 0.3815789473684211, "fallback": []}, "2026-04": {"score": 0.7226674641148325, "weightCovered": 0.8, "sum": 0.5781339712918661, "fallback": []}, "2026-05": {"score": 0.7613445378151261, "weightCovered": 0.8500000000000001, "sum": 0.6471428571428572, "fallback": []}, "2026-06": {"score": 0.7478276887756665, "weightCovered": 0.8500000000000001, "sum": 0.6356535354593166, "fallback": []}, "2026-07": {"score": 0.7681811097753368, "weightCovered": 0.9500000000000001, "sum": 0.72977205428657, "fallback": []}, "2026-08": {"score": 0.7689999246497029, "weightCovered": 1.0, "sum": 0.7689999246497029, "fallback": []}, "2026-09": {"score": 0.7759442364856263, "weightCovered": 1.0, "sum": 0.7759442364856263, "fallback": ["售后费用管控→2026-08", "工程师合格率→2026-08"]}}}, {"name": "苏海玉", "scope": "national", "role": "考核整体", "scopeLabel": "全国", "items": [{"name": "用户满意度", "weight": 0.2, "has": true, "kind": "sat", "target": 0.9965, "mid": "m_sat", "otkey": null, "unit": "", "months": {"2026-04": {"actual": 0.9977101032183081, "raw": [331.0, 144548.0], "coef": 1.0}, "2026-05": {"actual": 0.9980909601347557, "raw": [306.0, 160290.0], "coef": 1.0}, "2026-06": {"actual": 0.9979758428457659, "raw": [366.0, 180816.0], "coef": 1.0}, "2026-07": {"actual": 0.9977977833970575, "raw": [398.0, 180727.0], "coef": 1.0}, "2026-08": {"actual": 0.9977668939328558, "raw": [414.0, 185392.0], "coef": 1.0}, "2026-09": {"actual": 0.9977939311044683, "raw": [400.0, 181318.0], "coef": 1.0}}, "disp": null}, {"name": "净按约且一次就好", "weight": 0.2, "has": true, "kind": "higher", "target": 0.65, "mid": "m_netok", "otkey": null, "unit": "", "months": {"2026-03": {"actual": 0.6741353556244973, "raw": [35202.0, 52218.0], "coef": 1.0}, "2026-04": {"actual": 0.6801665243381725, "raw": [31859.0, 46840.0], "coef": 1.0}, "2026-05": {"actual": 0.6808353704796426, "raw": [32307.0, 47452.0], "coef": 1.0}, "2026-06": {"actual": 0.6506050605060506, "raw": [32527.0, 49995.0], "coef": 1.0}, "2026-07": {"actual": 0.6568791627021884, "raw": [34519.0, 52550.0], "coef": 1.0}, "2026-08": {"actual": 0.6527024365791216, "raw": [36458.0, 55857.0], "coef": 1.0}, "2026-09": {"actual": 0.6549717482307447, "raw": [34891.0, 53271.0], "coef": 1.0}}, "disp": null}, {"name": "金牌关键岗位数量", "weight": 0.2, "has": true, "kind": "gold", "target": null, "mid": "gold_key", "otkey": null, "unit": "", "months": {"2026-02": {"actual": 0.33663366336633666, "raw": [34, 101], "coef": 0.33663366336633666}, "2026-03": {"actual": 0.33663366336633666, "raw": [34, 101], "coef": 0.33663366336633666}, "2026-04": {"actual": 0.33663366336633666, "raw": [34, 101], "coef": 0.33663366336633666}, "2026-05": {"actual": 0.33663366336633666, "raw": [34, 101], "coef": 0.33663366336633666}, "2026-06": {"actual": 0.33663366336633666, "raw": [34, 101], "coef": 0.33663366336633666}, "2026-07": {"actual": 0.43564356435643564, "raw": [44, 101], "coef": 0.43564356435643564}, "2026-08": {"actual": 0.693069306930693, "raw": [70, 101], "coef": 0.693069306930693}, "2026-09": {"actual": 0.9306930693069307, "raw": [94, 101], "coef": 0.9306930693069307}}, "disp": null}, {"name": "伞下建设", "weight": 0.1, "has": true, "kind": "comp", "target": 1.0, "mid": "m_netbuild_san", "otkey": null, "unit": "", "months": {"2026-03": {"actual": 1.4333333333333333, "raw": [129.0, 90.0], "coef": 1.0}, "2026-04": {"actual": 1.1949685534591195, "raw": [190.0, 159.0], "coef": 1.0}, "2026-05": {"actual": 1.1473214285714286, "raw": [257.0, 224.0], "coef": 1.0}, "2026-06": {"actual": 1.0134680134680134, "raw": [301.0, 297.0], "coef": 1.0}, "2026-07": {"actual": 1.032967032967033, "raw": [376.0, 364.0], "coef": 1.0}, "2026-08": {"actual": 1.0639810426540284, "raw": [449.0, 422.0], "coef": 1.0}, "2026-09": {"actual": 0.9261477045908184, "raw": [464.0, 501.0], "coef": 0.9261477045908184}}, "disp": null}, {"name": "三方建设", "weight": 0.1, "has": true, "kind": "comp", "target": 1.0, "mid": "m_netbuild_tri", "otkey": null, "unit": "", "months": {"2026-03": {"actual": 0.9230769230769231, "raw": [24.0, 26.0], "coef": 0.9230769230769231}, "2026-04": {"actual": 0.8333333333333334, "raw": [45.0, 54.0], "coef": 0.8333333333333334}, "2026-05": {"actual": 0.9315068493150684, "raw": [68.0, 73.0], "coef": 0.9315068493150684}, "2026-06": {"actual": 0.9148936170212766, "raw": [86.0, 94.0], "coef": 0.9148936170212766}, "2026-07": {"actual": 0.9134615384615384, "raw": [95.0, 104.0], "coef": 0.9134615384615384}, "2026-08": {"actual": 0.8706896551724138, "raw": [101.0, 116.0], "coef": 0.8706896551724138}, "2026-09": {"actual": 0.860655737704918, "raw": [105.0, 122.0], "coef": 0.860655737704918}}, "disp": null}, {"name": "车辆", "weight": 0.1, "has": true, "kind": "comp", "target": 1.0, "mid": "m_vehicle", "otkey": null, "unit": "", "months": {"2026-02": {"actual": 1.0, "raw": [1, 1.0], "coef": 1.0}, "2026-03": {"actual": 2.0, "raw": [2, 1.0], "coef": 1.0}, "2026-04": {"actual": 1.6666666666666667, "raw": [10, 6.0], "coef": 1.0}, "2026-05": {"actual": 1.3888888888888888, "raw": [25, 18.0], "coef": 1.0}, "2026-06": {"actual": 1.032258064516129, "raw": [32, 31.0], "coef": 1.0}, "2026-07": {"actual": 0.9111111111111111, "raw": [41, 45.0], "coef": 0.9111111111111111}, "2026-08": {"actual": 0.9482758620689655, "raw": [55, 58.0], "coef": 0.9482758620689655}, "2026-09": {"actual": 0.7733333333333333, "raw": [58, 75.0], "coef": 0.7733333333333333}}, "disp": null}, {"name": "关键岗位合格率", "weight": 0.05, "has": true, "kind": "higher", "target": 0.85, "mid": "m_keyrate", "otkey": null, "unit": "", "months": {"2026-08": {"actual": 0.7926380368098159, "raw": [646, 815], "coef": 0.9325153374233128}, "2026-09": {"actual": 0.826302729528536, "raw": [666, 806], "coef": 0.972120858268866}}, "disp": null}, {"name": "工程师合格率", "weight": 0.05, "has": true, "kind": "higher", "target": 0.85, "mid": "m_engineer", "otkey": null, "unit": "", "months": {"2026-05": {"actual": 0.9354127284183995, "raw": [2969, 3174], "coef": 1.0}, "2026-06": {"actual": 0.8336933045356372, "raw": [2702, 3241], "coef": 0.9808156523948672}, "2026-07": {"actual": 0.8441517717152712, "raw": [2692, 3189], "coef": 0.9931197314297309}, "2026-08": {"actual": 0.8498626792798291, "raw": [2785, 3277], "coef": 0.9998384462115636}}, "disp": null}], "weightCovered": 0.9999999999999999, "weightTotal": 1.0, "scoreByMonth": {"2026-02": {"score": 0.5577557755775577, "weightCovered": 0.30000000000000004, "sum": 0.16732673267326734, "fallback": []}, "2026-03": {"score": 0.7994777499727995, "weightCovered": 0.7, "sum": 0.5596344249809596, "fallback": []}, "2026-04": {"score": 0.8340667400073342, "weightCovered": 0.9, "sum": 0.7506600660066007, "fallback": []}, "2026-05": {"score": 0.8531341237944993, "weightCovered": 0.9500000000000001, "sum": 0.8104774176047743, "fallback": []}, "2026-06": {"score": 0.8503756599948824, "weightCovered": 0.9500000000000001, "sum": 0.8078568769951383, "fallback": []}, "2026-07": {"score": 0.8623599625263565, "weightCovered": 0.9500000000000001, "sum": 0.8192419644000387, "fallback": []}, "2026-08": {"score": 0.9171281022920204, "weightCovered": 1.0, "sum": 0.9171281022920204, "fallback": []}, "2026-09": {"score": 0.9407502566483147, "weightCovered": 1.0, "sum": 0.9407502566483147, "fallback": ["工程师合格率→2026-08"]}}}, {"name": "梁金芝", "scope": "national", "role": "考核整体", "scopeLabel": "全国", "items": [{"name": "用户满意度（渠道）", "weight": 0.2, "has": true, "kind": "ot_h", "target": 0.9965, "mid": "ot_chan_sat", "otkey": "用户满意度（渠道）", "unit": "", "months": {"2026-07": {"actual": 1.0019066733567485, "raw": [0.9984, 0.9965], "coef": 1.0}, "2026-08": {"actual": 1.001806322127446, "raw": [0.9983, 0.9965], "coef": 1.0}, "2026-09": {"actual": 1.0021073758153538, "raw": [0.9986, 0.9965], "coef": 1.0}}, "disp": "pct"}, {"name": "电商差评率", "weight": 0.2, "has": true, "kind": "ot_l", "target": 0.001, "mid": "ot_badr", "otkey": "电商差评率", "unit": "", "months": {"2026-07": {"actual": 0.5, "raw": [0.002, 0.001], "coef": 0.5}, "2026-08": {"actual": 0.5882352941176471, "raw": [0.0017, 0.001], "coef": 0.5882352941176471}, "2026-09": {"actual": 2.5, "raw": [0.0004, 0.001], "coef": 1.0}}, "disp": "pct"}, {"name": "电商平台服务达标", "weight": 0.2, "has": true, "kind": "ot_h", "target": 0.9, "mid": "ot_eshop", "otkey": "电商平台服务达标", "unit": "", "months": {"2026-07": {"actual": 1.1111111111111112, "raw": [1.0, 0.9], "coef": 1.0}, "2026-08": {"actual": 1.1111111111111112, "raw": [1.0, 0.9], "coef": 1.0}, "2026-09": {"actual": 1.1111111111111112, "raw": [1.0, 0.9], "coef": 1.0}}, "disp": "pct"}, {"name": "网络经营", "weight": 0.2, "has": true, "kind": "higher", "target": 1.0, "mid": "m_netstd", "otkey": null, "unit": "", "months": {"2026-02": {"actual": 0.8201754385964912, "raw": [187, 228], "coef": 0.8201754385964912}, "2026-03": {"actual": 0.9082969432314411, "raw": [208, 229], "coef": 0.9082969432314411}, "2026-04": {"actual": 0.9401709401709402, "raw": [220, 234], "coef": 0.9401709401709402}, "2026-05": {"actual": 0.9557522123893806, "raw": [216, 226], "coef": 0.9557522123893806}, "2026-06": {"actual": 0.9155555555555556, "raw": [206, 225], "coef": 0.9155555555555556}, "2026-07": {"actual": 0.9553571428571429, "raw": [214, 224], "coef": 0.9553571428571429}, "2026-08": {"actual": 0.9419642857142857, "raw": [211, 224], "coef": 0.9419642857142857}, "2026-09": {"actual": 0.9181034482758621, "raw": [213, 232], "coef": 0.9181034482758621}}, "disp": null}, {"name": "用户投诉", "weight": 0.1, "has": true, "kind": "ot_l", "target": 0.0, "mid": "ot_compl", "otkey": "用户投诉", "unit": "", "months": {"2026-07": {"actual": 0.0, "raw": [1.0, 0.0], "coef": 0.0}, "2026-08": {"actual": 1.0, "raw": [0.0, 0.0], "coef": 1.0}, "2026-09": {"actual": 1.0, "raw": [0.0, 0.0], "coef": 1.0}}, "disp": "cnt"}, {"name": "流程输出", "weight": 0.05, "has": true, "kind": "ot_h", "target": 2.0, "mid": "ot_proc", "otkey": "标准化流程输出", "unit": "条", "months": {"2026-07": {"actual": 1.0, "raw": [2.0, 2.0], "coef": 1.0}, "2026-08": {"actual": 1.5, "raw": [3.0, 2.0], "coef": 1.0}, "2026-09": {"actual": 1.0, "raw": [2.0, 2.0], "coef": 1.0}}, "disp": "cnt"}, {"name": "案例还原", "weight": 0.05, "has": true, "kind": "ot_h", "target": 2.0, "mid": "ot_case", "otkey": "差评案例还原", "unit": "条", "months": {"2026-07": {"actual": 1.5, "raw": [3.0, 2.0], "coef": 1.0}, "2026-08": {"actual": 0.5, "raw": [1.0, 2.0], "coef": 0.5}, "2026-09": {"actual": 0.5, "raw": [1.0, 2.0], "coef": 0.5}}, "disp": "cnt"}], "weightCovered": 1.0, "weightTotal": 1.0, "scoreByMonth": {"2026-02": {"score": 0.8201754385964912, "weightCovered": 0.2, "sum": 0.16403508771929826, "fallback": []}, "2026-03": {"score": 0.9082969432314411, "weightCovered": 0.2, "sum": 0.18165938864628822, "fallback": []}, "2026-04": {"score": 0.9401709401709402, "weightCovered": 0.2, "sum": 0.18803418803418803, "fallback": []}, "2026-05": {"score": 0.9557522123893806, "weightCovered": 0.2, "sum": 0.19115044247787613, "fallback": []}, "2026-06": {"score": 0.9155555555555556, "weightCovered": 0.2, "sum": 0.1831111111111111, "fallback": []}, "2026-07": {"score": 0.7910714285714286, "weightCovered": 1.0, "sum": 0.7910714285714286, "fallback": []}, "2026-08": {"score": 0.8810399159663866, "weightCovered": 1.0, "sum": 0.8810399159663866, "fallback": []}, "2026-09": {"score": 0.9586206896551726, "weightCovered": 1.0, "sum": 0.9586206896551726, "fallback": []}}}, {"name": "范锦杰", "scope": "national", "role": "考核整体", "scopeLabel": "全国", "items": [{"name": "用户满意度（渠道）", "weight": 0.2, "has": true, "kind": "ot_h", "target": 0.9965, "mid": "ot_chan_sat", "otkey": "用户满意度（渠道）", "unit": "", "months": {"2026-07": {"actual": 1.0019066733567485, "raw": [0.9984, 0.9965], "coef": 1.0}, "2026-08": {"actual": 1.001806322127446, "raw": [0.9983, 0.9965], "coef": 1.0}, "2026-09": {"actual": 1.0021073758153538, "raw": [0.9986, 0.9965], "coef": 1.0}}, "disp": "pct"}, {"name": "电商差评率", "weight": 0.2, "has": true, "kind": "ot_l", "target": 0.001, "mid": "ot_badr", "otkey": "电商差评率", "unit": "", "months": {"2026-07": {"actual": 0.5, "raw": [0.002, 0.001], "coef": 0.5}, "2026-08": {"actual": 0.5882352941176471, "raw": [0.0017, 0.001], "coef": 0.5882352941176471}, "2026-09": {"actual": 2.5, "raw": [0.0004, 0.001], "coef": 1.0}}, "disp": "pct"}, {"name": "工程巡检", "weight": 0.2, "has": true, "kind": "ot_h", "target": 10.0, "mid": "ot_insp", "otkey": "工程巡检", "unit": "条", "months": {"2026-07": {"actual": 0.7, "raw": [7.0, 10.0], "coef": 0.7}, "2026-08": {"actual": 1.0, "raw": [10.0, 10.0], "coef": 1.0}, "2026-09": {"actual": 1.5, "raw": [15.0, 10.0], "coef": 1.0}}, "disp": "cnt"}, {"name": "网络经营", "weight": 0.2, "has": true, "kind": "higher", "target": 1.0, "mid": "m_netstd", "otkey": null, "unit": "", "months": {"2026-02": {"actual": 0.8201754385964912, "raw": [187, 228], "coef": 0.8201754385964912}, "2026-03": {"actual": 0.9082969432314411, "raw": [208, 229], "coef": 0.9082969432314411}, "2026-04": {"actual": 0.9401709401709402, "raw": [220, 234], "coef": 0.9401709401709402}, "2026-05": {"actual": 0.9557522123893806, "raw": [216, 226], "coef": 0.9557522123893806}, "2026-06": {"actual": 0.9155555555555556, "raw": [206, 225], "coef": 0.9155555555555556}, "2026-07": {"actual": 0.9553571428571429, "raw": [214, 224], "coef": 0.9553571428571429}, "2026-08": {"actual": 0.9419642857142857, "raw": [211, 224], "coef": 0.9419642857142857}, "2026-09": {"actual": 0.9181034482758621, "raw": [213, 232], "coef": 0.9181034482758621}}, "disp": null}, {"name": "信息回复及时率", "weight": 0.1, "has": true, "kind": "ot_h", "target": 1.0, "mid": "ot_reply", "otkey": "信息回复及时率", "unit": "", "months": {"2026-07": {"actual": 1.0, "raw": [1.0, 1.0], "coef": 1.0}, "2026-08": {"actual": 1.0, "raw": [1.0, 1.0], "coef": 1.0}, "2026-09": {"actual": 1.0, "raw": [1.0, 1.0], "coef": 1.0}}, "disp": "pct"}, {"name": "工程案例", "weight": 0.05, "has": true, "kind": "ot_h", "target": 8.0, "mid": "ot_caseproj", "otkey": "工程案例库项目", "unit": "条", "months": {"2026-07": {"actual": 1.125, "raw": [9.0, 8.0], "coef": 1.0}, "2026-08": {"actual": 1.0, "raw": [8.0, 8.0], "coef": 1.0}, "2026-09": {"actual": 1.0, "raw": [8.0, 8.0], "coef": 1.0}}, "disp": "cnt"}, {"name": "流程输出", "weight": 0.03, "has": true, "kind": "ot_h", "target": 2.0, "mid": "ot_proc", "otkey": "标准化流程输出", "unit": "条", "months": {"2026-07": {"actual": 1.0, "raw": [2.0, 2.0], "coef": 1.0}, "2026-08": {"actual": 1.5, "raw": [3.0, 2.0], "coef": 1.0}, "2026-09": {"actual": 1.0, "raw": [2.0, 2.0], "coef": 1.0}}, "disp": "cnt"}, {"name": "案例还原", "weight": 0.02, "has": true, "kind": "ot_h", "target": 2.0, "mid": "ot_case", "otkey": "差评案例还原", "unit": "条", "months": {"2026-07": {"actual": 1.5, "raw": [3.0, 2.0], "coef": 1.0}, "2026-08": {"actual": 0.5, "raw": [1.0, 2.0], "coef": 0.5}, "2026-09": {"actual": 0.5, "raw": [1.0, 2.0], "coef": 0.5}}, "disp": "cnt"}], "weightCovered": 1.0, "weightTotal": 1.0, "scoreByMonth": {"2026-02": {"score": 0.8201754385964912, "weightCovered": 0.2, "sum": 0.16403508771929826, "fallback": []}, "2026-03": {"score": 0.9082969432314411, "weightCovered": 0.2, "sum": 0.18165938864628822, "fallback": []}, "2026-04": {"score": 0.9401709401709402, "weightCovered": 0.2, "sum": 0.18803418803418803, "fallback": []}, "2026-05": {"score": 0.9557522123893806, "weightCovered": 0.2, "sum": 0.19115044247787613, "fallback": []}, "2026-06": {"score": 0.9155555555555556, "weightCovered": 0.2, "sum": 0.1831111111111111, "fallback": []}, "2026-07": {"score": 0.8310714285714287, "weightCovered": 1.0, "sum": 0.8310714285714287, "fallback": []}, "2026-08": {"score": 0.8960399159663867, "weightCovered": 1.0, "sum": 0.8960399159663867, "fallback": []}, "2026-09": {"score": 0.9736206896551726, "weightCovered": 1.0, "sum": 0.9736206896551726, "fallback": []}}}, {"name": "赵洲礼", "scope": "none", "role": "暂无考核项", "scopeLabel": "全国", "items": [], "weightCovered": 0.0, "weightTotal": 0, "scoreByMonth": {}}, {"name": "崔晨阳", "scope": "national", "role": "考核整体", "scopeLabel": "全国", "items": [{"name": "用户满意度", "weight": 0.2, "has": true, "kind": "sat", "target": 0.9965, "mid": "m_sat", "otkey": null, "unit": "", "months": {"2026-04": {"actual": 0.9977101032183081, "raw": [331.0, 144548.0], "coef": 1.0}, "2026-05": {"actual": 0.9980909601347557, "raw": [306.0, 160290.0], "coef": 1.0}, "2026-06": {"actual": 0.9979758428457659, "raw": [366.0, 180816.0], "coef": 1.0}, "2026-07": {"actual": 0.9977977833970575, "raw": [398.0, 180727.0], "coef": 1.0}, "2026-08": {"actual": 0.9977668939328558, "raw": [414.0, 185392.0], "coef": 1.0}, "2026-09": {"actual": 0.9977939311044683, "raw": [400.0, 181318.0], "coef": 1.0}}, "disp": null}, {"name": "售后费用管控", "weight": 0.2, "has": true, "kind": "cost", "target": null, "mid": "m_cost", "otkey": null, "unit": "", "months": {"2026-07": {"actual": 0.8740790245136008, "raw": [21982648.77, 25149498.11], "coef": 0.8740790245136008}, "2026-08": {"actual": 0.88308568863218, "raw": [25146094.77, 28475260.21], "coef": 0.88308568863218}}, "disp": null}, {"name": "积分池项目", "weight": 0.2, "has": false, "kind": null, "target": null, "mid": null, "otkey": null, "unit": "", "months": {}, "disp": null}, {"name": "网络经营", "weight": 0.1, "has": true, "kind": "higher", "target": 1.0, "mid": "m_netstd", "otkey": null, "unit": "", "months": {"2026-02": {"actual": 0.8201754385964912, "raw": [187, 228], "coef": 0.8201754385964912}, "2026-03": {"actual": 0.9082969432314411, "raw": [208, 229], "coef": 0.9082969432314411}, "2026-04": {"actual": 0.9401709401709402, "raw": [220, 234], "coef": 0.9401709401709402}, "2026-05": {"actual": 0.9557522123893806, "raw": [216, 226], "coef": 0.9557522123893806}, "2026-06": {"actual": 0.9155555555555556, "raw": [206, 225], "coef": 0.9155555555555556}, "2026-07": {"actual": 0.9553571428571429, "raw": [214, 224], "coef": 0.9553571428571429}, "2026-08": {"actual": 0.9419642857142857, "raw": [211, 224], "coef": 0.9419642857142857}, "2026-09": {"actual": 0.9181034482758621, "raw": [213, 232], "coef": 0.9181034482758621}}, "disp": null}, {"name": "新人培训上岗合格", "weight": 0.1, "has": false, "kind": null, "target": null, "mid": null, "otkey": null, "unit": "", "months": {}, "disp": null}, {"name": "人员考评", "weight": 0.1, "has": false, "kind": null, "target": null, "mid": null, "otkey": null, "unit": "", "months": {}, "disp": null}, {"name": "伞下建设", "weight": 0.05, "has": true, "kind": "comp", "target": 1.0, "mid": "m_netbuild_san", "otkey": null, "unit": "", "months": {"2026-03": {"actual": 1.4333333333333333, "raw": [129.0, 90.0], "coef": 1.0}, "2026-04": {"actual": 1.1949685534591195, "raw": [190.0, 159.0], "coef": 1.0}, "2026-05": {"actual": 1.1473214285714286, "raw": [257.0, 224.0], "coef": 1.0}, "2026-06": {"actual": 1.0134680134680134, "raw": [301.0, 297.0], "coef": 1.0}, "2026-07": {"actual": 1.032967032967033, "raw": [376.0, 364.0], "coef": 1.0}, "2026-08": {"actual": 1.0639810426540284, "raw": [449.0, 422.0], "coef": 1.0}, "2026-09": {"actual": 0.9261477045908184, "raw": [464.0, 501.0], "coef": 0.9261477045908184}}, "disp": null}, {"name": "三方建设", "weight": 0.05, "has": true, "kind": "comp", "target": 1.0, "mid": "m_netbuild_tri", "otkey": null, "unit": "", "months": {"2026-03": {"actual": 0.9230769230769231, "raw": [24.0, 26.0], "coef": 0.9230769230769231}, "2026-04": {"actual": 0.8333333333333334, "raw": [45.0, 54.0], "coef": 0.8333333333333334}, "2026-05": {"actual": 0.9315068493150684, "raw": [68.0, 73.0], "coef": 0.9315068493150684}, "2026-06": {"actual": 0.9148936170212766, "raw": [86.0, 94.0], "coef": 0.9148936170212766}, "2026-07": {"actual": 0.9134615384615384, "raw": [95.0, 104.0], "coef": 0.9134615384615384}, "2026-08": {"actual": 0.8706896551724138, "raw": [101.0, 116.0], "coef": 0.8706896551724138}, "2026-09": {"actual": 0.860655737704918, "raw": [105.0, 122.0], "coef": 0.860655737704918}}, "disp": null}], "weightCovered": 0.6000000000000001, "weightTotal": 1.0, "scoreByMonth": {"2026-02": {"score": 0.8201754385964912, "weightCovered": 0.1, "sum": 0.08201754385964913, "fallback": []}, "2026-03": {"score": 0.9349177023849514, "weightCovered": 0.2, "sum": 0.18698354047699028, "fallback": []}, "2026-04": {"score": 0.9642094017094017, "weightCovered": 0.4, "sum": 0.3856837606837607, "fallback": []}, "2026-05": {"score": 0.9803764092617286, "weightCovered": 0.4, "sum": 0.3921505637046915, "fallback": []}, "2026-06": {"score": 0.9682505910165484, "weightCovered": 0.4, "sum": 0.38730023640661937, "fallback": []}, "2026-07": {"score": 0.9433743268525188, "weightCovered": 0.6000000000000001, "sum": 0.5660245961115113, "fallback": []}, "2026-08": {"score": 0.9405800817608087, "weightCovered": 0.6000000000000001, "sum": 0.5643480490564853, "fallback": []}, "2026-09": {"score": 0.9296127577813483, "weightCovered": 0.6000000000000001, "sum": 0.5577676546688091, "fallback": ["售后费用管控→2026-08"]}}}], "access": {"总部": ["宋家僖", "苏海玉", "梁金芝", "范锦杰", "崔晨阳", "梁杰锋", "刘玉仪", "赵洲礼"], "全部": ["宋家僖", "苏海玉", "梁金芝", "范锦杰", "崔晨阳", "梁杰锋", "刘玉仪", "赵洲礼"], "all": ["宋家僖", "苏海玉", "梁金芝", "范锦杰", "崔晨阳", "梁杰锋", "刘玉仪", "赵洲礼"], "宋家僖1022": ["宋家僖"], "苏海玉1201": ["苏海玉"], "梁金芝1106": ["梁金芝", "范锦杰", "赵洲礼"], "范锦杰0718": ["范锦杰"], "崔晨阳0425": ["宋家僖", "苏海玉", "梁金芝", "范锦杰", "崔晨阳", "梁杰锋", "刘玉仪", "赵洲礼"], "梁杰锋1027": ["梁杰锋"], "刘玉仪0615": ["刘玉仪"], "赵洲礼0630": ["赵洲礼"]}};
+const MONTHS = KPI.months;
+let CUR = KPI.monthCur;
+
+function fmtMo(mo){ return mo.slice(5,7) + "月"; }
+function fmtPct(x, d){ return x==null ? "—" : (x*100).toFixed(d==null?1:d) + "%"; }
+function fmtCount(x){ if(x==null) return "—"; const r=Math.round(x*10)/10; return (r%1===0)?String(Math.round(x)):r.toFixed(1); }
+
+function resolveMonth(rec, mo){
+  if(rec.months[mo]) return {m:rec.months[mo], src:mo, fb:false};
+  const cands = Object.keys(rec.months).filter(x=>x<mo).sort();
+  if(cands.length){ const src=cands[cands.length-1]; return {m:rec.months[src], src:src, fb:true}; }
+  return {m:null, src:null, fb:false};
+}
+function fmtCellVal(rec, m){
+  if(rec.disp==="pct") return fmtPct(m.raw[0], 2);
+  if(rec.disp==="cnt") return fmtCount(m.raw[0]) + (rec.unit || "例");
+  if(rec.kind==="gold") return m.raw[0]+"/"+m.raw[1]+"（"+fmtPct(m.actual)+"）";
+  if(rec.kind==="cost") return "达成率 "+fmtPct(m.actual);
+  if(rec.kind==="ot_h"||rec.kind==="ot_l"){
+    const u = rec.unit||"";
+    if(rec.kind==="ot_l" && (rec.target===0||rec.target==null)) return m.raw[0]+"例（"+fmtPct(m.actual)+"）";
+    return m.raw[0]+u+"/"+m.raw[1]+u+"（"+fmtPct(m.actual)+"）";
+  }
+  return fmtPct(m.actual);
+}
+function itemStatus(rec, mo){
+  if(!rec.has) return {txt:"待补数据源", cls:"gray", val:"—", ok:null};
+  const r = resolveMonth(rec, mo);
+  if(!r.m) return {txt:"无数据", cls:"gray", val:"—", ok:null};
+  const m=r.m, ok = m.coef >= 1 - 1e-9;
+  let val;
+  if(rec.disp==="pct") val = fmtPct(m.raw[0], 2);
+  else if(rec.disp==="cnt") val = fmtCount(m.raw[0]) + (rec.unit || "例");
+  else if(rec.kind==="gold") val = m.raw[0]+"/"+m.raw[1];
+  else if(rec.kind==="ot_l" && (rec.target===0||rec.target==null)){
+    val = (m.raw? (m.raw[0]+"例 ") : "") + "("+fmtPct(m.actual)+")";
+  }
+  else if(rec.kind==="ot_h"||rec.kind==="ot_l"){
+    const u = rec.unit||"";
+    const rt = (m.raw && m.raw.length>=2) ? (m.raw[0]+u+"/"+m.raw[1]+u+" ") : "";
+    val = rt + "("+fmtPct(m.actual)+")";
+  }
+  else val = fmtPct(m.actual);
+  return {txt: ok?"达标":"未达标", cls: ok?"green":"red", val:val, ok, actual:m.actual, raw:m.raw, src:r.src, fb:r.fb};
+}
+
+function scoreColor(s){
+  if(s==null) return "n";
+  if(s>=0.9) return "g";
+  if(s>=0.75) return "y";
+  return "r";
+}
+
+function renderCard(p, idx){
+  const s = p.scoreByMonth[CUR];
+  const scorePct = s ? s.score : null;
+  const cov = p.weightCovered*100;
+  const tot = p.weightTotal*100;
+  const roleCls = p.scope==="none" ? "tag gray" : "tag";
+  let rows = "";
+  if(p.items.length===0){
+    rows = '<div class="empty" style="padding:16px;border:none">暂无考核项</div>';
+  } else {
+    p.items.forEach(rec=>{
+      const st = itemStatus(rec, CUR);
+      const valCls = st.ok===true ? "g" : (st.ok===false ? "r" : "n");
+      const fbTag = st.fb ? '<span class="fbk">用'+fmtMo(st.src)+'</span>' : '';
+      rows += '<div class="krow">'+
+        '<div class="kname">'+rec.name+'<span class="kw">'+(rec.weight*100)+'%</span></div>'+
+        '<div class="kval '+valCls+'">'+st.val+fbTag+'</div>'+
+        '<div class="kst '+st.cls+'">'+st.txt+'</div>'+
+      '</div>';
+    });
+  }
+  const card = document.createElement("div");
+  card.className = "pcard";
+  card.dataset.idx = idx;
+  card.innerHTML =
+    '<div class="phead">'+
+      '<div class="pname">'+p.name+'<span class="'+roleCls+'">'+p.role+'</span></div>'+
+      '<div class="pscore '+scoreColor(scorePct)+'">'+(scorePct==null?"—":(scorePct*100).toFixed(1)+'<span class="u">%</span>')+'</div>'+
+    '</div>'+
+    '<div class="pmeta">'+fmtMo(CUR)+' · 已覆盖 '+p.items.filter(x=>x.has).length+'/'+p.items.length+' 项（权重合计 '+cov.toFixed(0)+'%）</div>'+
+    '<div class="items">'+rows+'</div>'+
+    '<div class="pexpand">点击展开全部月及趋势 ▾</div>'+
+    '<div class="pdetail"></div>';
+  card.addEventListener("click", e=>{
+    if(e.target.closest(".pdetail")) return;   // 展开区内部不收起
+    card.classList.toggle("open");
+    if(card.classList.contains("open")) fillDetail(card, p);
+  });
+  return card;
+}
+
+function svgTrend(p){
+  const pts = MONTHS.map(mo=>{
+    const s = p.scoreByMonth[mo];
+    return {mo, v: s ? s.score : null};
+  }).filter(x=>x.v!=null);
+  if(pts.length===0) return '<div class="n" style="font-size:12px">暂无趋势数据</div>';
+  const W=680, H=150, PL=44, PR=16, PT=18, PB=30;
+  const iw=W-PL-PR, ih=H-PT-PB;
+  const vals = pts.map(x=>x.v);
+  let lo=Math.min(...vals), hi=Math.max(...vals);
+  lo=Math.min(lo,0.6); hi=Math.max(hi,1.0);
+  const pad=(hi-lo)*0.1||0.05; lo=Math.max(0,lo-pad); hi=Math.min(1.02,hi+pad);
+  const x = i => PL + (pts.length===1?iw/2:(iw*i/(pts.length-1)));
+  const y = v => PT + ih*(1-(v-lo)/(hi-lo));
+  let grid="", lbl="";
+  [0,0.25,0.5,0.75,1].forEach(f=>{
+    const v=lo+(hi-lo)*f, yy=y(v);
+    grid+='<line x1="'+PL+'" y1="'+yy+'" x2="'+(W-PR)+'" y2="'+yy+'" stroke="#e6ebf2" stroke-width="1"/>';
+    lbl+='<text x="'+(PL-6)+'" y="'+(yy+3.5)+'" text-anchor="end" font-size="10" fill="#98a4b6">'+(v*100).toFixed(0)+'%</text>';
+  });
+  let path="", dots="", xl="";
+  pts.forEach((pt,i)=>{
+    const px=x(i), py=y(pt.v);
+    path += (i===0?"M":"L")+px.toFixed(1)+" "+py.toFixed(1)+" ";
+    dots += '<circle cx="'+px.toFixed(1)+'" cy="'+py.toFixed(1)+'" r="4" fill="#2f6fed" stroke="#fff" stroke-width="2"/>'+
+            '<text x="'+px.toFixed(1)+'" y="'+(py-9)+'" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1f2d3d">'+(pt.v*100).toFixed(1)+'%</text>';
+    xl += '<text x="'+px.toFixed(1)+'" y="'+(H-10)+'" text-anchor="middle" font-size="10.5" fill="#67748a">'+fmtMo(pt.mo)+'</text>';
+  });
+  return '<svg class="trend" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">'+
+    grid+lbl+
+    '<path d="'+path+'" fill="none" stroke="#2f6fed" stroke-width="2.5" stroke-linejoin="round"/>'+
+    dots+xl+'</svg>';
+}
+
+function fillDetail(card, p){
+  const box = card.querySelector(".pdetail");
+  if(box.dataset.done==="1") return;
+  let head = '<tr><th>项目</th><th>权重</th><th>目标</th>';
+  MONTHS.forEach(mo=> head += '<th>'+fmtMo(mo)+'</th>');
+  head += '</tr>';
+  let body="";
+  p.items.forEach(rec=>{
+    if(!rec.has){
+      body += '<tr><td>'+rec.name+'</td><td>'+(rec.weight*100)+'%</td><td class="tdmiss">—</td>'+
+              '<td class="tdmiss" colspan="'+MONTHS.length+'">待补数据源</td></tr>';
+      return;
+    }
+    const firstKey = Object.keys(rec.months).sort()[0];
+    const firstM = firstKey ? rec.months[firstKey] : null;
+    let tgt = "—";
+    if(rec.kind==="gold") tgt = "目标"+(firstM?firstM.raw[1]:"—");
+    else if(rec.kind==="cost") tgt = "达成率=目标/实际";
+    else if(rec.kind==="yoy") tgt = "目标同比下降"+Math.round((rec.target||0)*100)+"%";
+    else if(rec.kind==="ot_h"||rec.kind==="ot_l"){
+      if(rec.target===0||rec.target==null) tgt = "目标 0 例";
+      else if(rec.unit) tgt = rec.target + rec.unit + "/月";
+      else tgt = fmtPct(rec.target, (rec.target!=null && rec.target<1)?1:0);
+    }
+    else if(firstM) tgt = fmtPct(rec.target, (rec.target!=null && rec.target<1)?1:0);
+    body += '<tr><td>'+rec.name+'</td><td>'+(rec.weight*100)+'%</td><td>'+tgt+'</td>';
+    MONTHS.forEach(mo=>{
+      const r = resolveMonth(rec, mo);
+      if(!r.m){ body += '<td class="tdmiss">—</td>'; return; }
+      const m=r.m, ok = m.coef>=1-1e-9;
+      const cellTxt = fmtCellVal(rec, m);
+      const fbt = r.fb ? '<span class="fbk">用'+fmtMo(r.src)+'</span>' : '';
+      body += '<td class="'+(ok?"g":"r")+'">'+cellTxt+fbt+'</td>';
+    });
+    body += '</tr>';
+  });
+  // 综合达成率行
+  body += '<tr><td><b>综合达成率</b></td><td><b>100%</b></td><td>—</td>';
+  MONTHS.forEach(mo=>{
+    const s=p.scoreByMonth[mo];
+    body += '<td class="'+scoreColor(s?s.score:null)+'"><b>'+(s?(s.score*100).toFixed(1)+"%":"—")+'</b></td>';
+  });
+  body += '</tr>';
+  box.innerHTML =
+    '<div class="dtitle">综合达成率趋势</div>'+ svgTrend(p) +
+    '<div class="dtitle" style="margin-top:14px">逐月明细（'+p.name+' · '+p.role+'）</div>'+
+    '<div class="tblwrap"><table><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>';
+  box.dataset.done="1";
+}
+
+function expandAll(open){
+  document.querySelectorAll(".pcard").forEach(c=>{
+    const p = KPI.people[+c.dataset.idx];
+    if(open){ c.classList.add("open"); fillDetail(c,p); }
+    else c.classList.remove("open");
+  });
+}
+
+// 当前查询过滤结果（按权限过滤后的 people 列表）；默认空 = 不显示任何人
+let curFiltered = [];
+
+function renderGrid(){
+  const g = document.getElementById("grid");
+  g.innerHTML="";
+  if(curFiltered.length===0){
+    const msg = (document.getElementById("qHint").textContent || "").trim() || "请输入查询内容查看对应 KPI";
+    g.innerHTML = '<div class="empty">'+msg+'</div>';
+    return;
+  }
+  curFiltered.forEach(p=> g.appendChild(renderCard(p, KPI.people.indexOf(p))));
+}
+
+function doQuery(){
+  const q = document.getElementById("qInput").value.trim();
+  const hint = document.getElementById("qHint");
+  if(q===""){
+    curFiltered = [];
+    hint.textContent = "请输入查询内容（如：姓名+时间）查看对应 KPI；输入「总部」查看全部";
+    hint.style.color = "var(--sub)";
+    renderGrid();
+    return;
+  }
+  const names = (KPI.access && KPI.access[q]) || null;
+  if(!names || names.length===0){
+    curFiltered = [];
+    hint.textContent = "未找到查询内容或无查看权限";
+    hint.style.color = "var(--red)";
+    renderGrid();
+    return;
+  }
+  const visible = new Set(names);
+  curFiltered = KPI.people.filter(p=> visible.has(p.name));
+  hint.textContent = "查询「"+q+"」：显示 "+curFiltered.length+" 人";
+  hint.style.color = "var(--green)";
+  renderGrid();
+}
+
+function setMonth(mo){
+  CUR = mo;
+  renderGrid();
+  document.getElementById("meta").textContent = "当前月份：" + fmtMo(mo) + "（" + mo + "）";
+}
+
+(function init(){
+  const sel = document.getElementById("monthSel");
+  MONTHS.forEach(mo=>{
+    const o=document.createElement("option"); o.value=mo; o.textContent=fmtMo(mo)+"（"+mo+"）";
+    if(mo===KPI.monthCur) o.selected=true; sel.appendChild(o);
+  });
+  const covered = KPI.people.reduce((a,p)=>a+(p.items.some(x=>x.has)?1:0),0);
+  document.getElementById("foot").textContent = "数据源：基础指标数据源（月终版） · 口径与「区域自查业绩看板」一致 · 生成于本机";
+  setMonth(KPI.monthCur);
+})();
+</script>
+</body>
+</html>
